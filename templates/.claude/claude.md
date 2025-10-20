@@ -49,6 +49,16 @@ Next task or completion
 - **master-docs**: README/ADR/CHANGELOG generation
 - **master-data**: Seeds, fixtures, data integrity
 
+## Utilities
+
+> Utilities:
+> - `/switch-to-review-mode` → Temporarily require diffs & approval before writes.
+> - `/mcp status` → Summarize discovered MCP servers and enabled tools.
+
+When `/switch-to-review-mode` is invoked:
+- Set `autonomy: review_each_step` for the current run only.
+- All writes must go through Integrator with a generated diff summary.
+
 ## Handoff Contracts (JSON)
 
 ### Research → Master-FullStack/Coder

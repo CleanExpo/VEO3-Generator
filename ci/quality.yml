@@ -1,20 +1,18 @@
 # GitHub Actions Quality Workflow
-# Disabled by default - enable in .claude/config.yaml
+# Disabled by default - enable by setting repository variable ENABLE_CLAUDE_CI=true
 
-name: Quality Checks
-
-# DISABLED: Uncomment to enable
-# on:
-#   push:
-#     branches: [main, develop]
-#   pull_request:
-#     branches: [main, develop]
+name: Quality
 
 on:
-  workflow_dispatch:  # Manual trigger only until enabled
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:  # Manual trigger also available
 
 jobs:
   lint:
+    if: ${{ vars.ENABLE_CLAUDE_CI == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -32,6 +30,7 @@ jobs:
         run: npm run lint
 
   test:
+    if: ${{ vars.ENABLE_CLAUDE_CI == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -53,6 +52,7 @@ jobs:
         if: always()
 
   e2e:
+    if: ${{ vars.ENABLE_CLAUDE_CI == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -80,6 +80,7 @@ jobs:
           path: playwright-report/
 
   build:
+    if: ${{ vars.ENABLE_CLAUDE_CI == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -103,6 +104,6 @@ jobs:
           fi
 
 # Enable this workflow by:
-# 1. Uncommenting the 'on: push/pull_request' section above
-# 2. Or setting ci.enabled: true in .claude/config.yaml
-# 3. Or telling the orchestrator: "Enable CI workflows"
+# 1. Set repository variable: ENABLE_CLAUDE_CI=true in GitHub Settings > Secrets and variables > Actions > Variables
+# 2. Or set ci.enabled: true in .claude/config.yaml (will add ENABLE_CLAUDE_CI automatically when pushing)
+# 3. Or tell the orchestrator: "Enable CI workflows"

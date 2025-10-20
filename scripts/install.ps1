@@ -1,259 +1,269 @@
 # Claude Orchestrator Installation Script - Windows
-# Idempotent copy-in with discovery, diff reporting, and smart merging
+# Idempotent copy-in with discovery, diff reporting, smart merging, and safety
 
 param(
-    [switch]$Force,
-    [switch]$SkipDetection
+  [switch]$Force,
+  [switch]$SkipDetection,
+  [switch]$DryRun,
+  [switch]$Verbose
 )
 
 $ErrorActionPreference = "Stop"
+$host.ui.RawUI.WindowTitle = "Claude Orchestrator Installer"
 
-Write-Host "=== Claude Orchestrator Installer ===" -ForegroundColor Cyan
-Write-Host ""
+Write-Host "=== Claude Orchestrator Installer (Windows) ===" -ForegroundColor Cyan
 
-# Get script directory and template source
-$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$TemplateDir = Join-Path (Split-Path -Parent $ScriptDir) "templates\.claude"
-$TargetDir = ".\.claude"
-$DiffDir = "$TargetDir\_install-diff"
-
-# Validate prerequisites
-Write-Host "Checking prerequisites..." -ForegroundColor Yellow
-
-# Check PowerShell version
-if ($PSVersionTable.PSVersion.Major -lt 5) {
-    Write-Host "✗ PowerShell 5.0+ required" -ForegroundColor Red
-    exit 1
-}
-Write-Host "✓ PowerShell $($PSVersionTable.PSVersion)" -ForegroundColor Green
-
-# Check Node.js
+# ExecutionPolicy helper (session-only)
 try {
-    $nodeVersion = node --version 2>$null
-    Write-Host "✓ Node.js $nodeVersion" -ForegroundColor Green
+  $currentPolicy = Get-ExecutionPolicy -Scope Process
+  if ($currentPolicy -eq "Undefined") {
+    Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass -Force
+  }
 } catch {
-    Write-Host "⚠ Node.js not found - MCP servers may not work" -ForegroundColor Yellow
-    Write-Host "  Install from: https://nodejs.org" -ForegroundColor Gray
+  Write-Host "⚠ Unable to adjust ExecutionPolicy for this session. You may need to run PowerShell as Administrator." -ForegroundColor Yellow
 }
 
-Write-Host ""
+# Paths
+$ScriptDir   = Split-Path -Parent $MyInvocation.MyCommand.Path
+$RepoRoot    = Split-Path -Parent $ScriptDir
+$TemplateDir = Join-Path $RepoRoot "templates\.claude"
+$TargetDir   = ".\.claude"
+$DiffDir     = "$TargetDir\_install-diff"
+$LogPath     = Join-Path $DiffDir "install.log"
 
-# Run detection (unless skipped)
-$HasPlaywright = $false
-$McpServers = @()
-
-if (!$SkipDetection) {
-    Write-Host "Running environment detection..." -ForegroundColor Yellow
-    Write-Host ""
-    
-    # Detect Playwright
-    if (Test-Path "$ScriptDir\detect-playwright.ps1") {
-        & "$ScriptDir\detect-playwright.ps1" | Out-Null
-        
-        # Check if Playwright is installed
-        if (Test-Path "package.json") {
-            $pkg = Get-Content "package.json" | ConvertFrom-Json
-            $HasPlaywright = ($pkg.dependencies.playwright -or 
-                            $pkg.devDependencies.playwright -or
-                            $pkg.dependencies."@playwright/test" -or
-                            $pkg.devDependencies."@playwright/test")
-        }
-    }
-    
-    # Detect MCP servers
-    if (Test-Path "$ScriptDir\detect-mcp.ps1") {
-        & "$ScriptDir\detect-mcp.ps1" | Out-Null
-    }
-    
-    Write-Host ""
+# Logging helper
+function Write-Log {
+  param([string]$Message)
+  if (!(Test-Path $DiffDir)) { New-Item -ItemType Directory -Path $DiffDir | Out-Null }
+  ("[{0}] {1}" -f (Get-Date -Format "u"), $Message) | Out-File $LogPath -Append -Encoding utf8
+  if ($Verbose) { Write-Host "• $Message" -ForegroundColor DarkGray }
 }
 
-# Determine installation mode
-$IsNewInstall = !(Test-Path $TargetDir)
+Write-Host "`nChecking prerequisites..." -ForegroundColor Yellow
 
-if ($IsNewInstall) {
-    Write-Host "NEW INSTALLATION" -ForegroundColor Green
-    Write-Host "Installing orchestrator to $TargetDir" -ForegroundColor Cyan
+# PowerShell version
+if ($PSVersionTable.PSVersion.Major -lt 5) {
+  Write-Host "✗ PowerShell 5.0+ required" -ForegroundColor Red
+  exit 1
 } else {
-    Write-Host "EXISTING INSTALLATION" -ForegroundColor Yellow
-    Write-Host "Updating $TargetDir (preserving your files)" -ForegroundColor Cyan
+  Write-Host "✓ PowerShell $($PSVersionTable.PSVersion)" -ForegroundColor Green
+}
+
+# Node.js (optional but recommended)
+try {
+  $nodeVersion = node --version 2>$null
+  Write-Host "✓ Node.js $nodeVersion" -ForegroundColor Green
+} catch {
+  Write-Host "⚠ Node.js not found - MCP servers and Playwright may not work" -ForegroundColor Yellow
+  Write-Host "  Install from: https://nodejs.org" -ForegroundColor Gray
 }
 
 Write-Host ""
 
-# Create target directory if needed
-if (!(Test-Path $TargetDir)) {
-    New-Item -ItemType Directory -Path $TargetDir | Out-Null
+# Detect Playwright (namespaced, never overwrite)
+function Detect-Playwright {
+  $has = $false
+  if (Test-Path "package.json") {
+    try {
+      $pkg = Get-Content "package.json" -Raw | ConvertFrom-Json
+      $has = ($pkg.dependencies.playwright -or $pkg.devDependencies.playwright `
+           -or $pkg.dependencies."@playwright/test" -or $pkg.devDependencies."@playwright/test")
+    } catch { $has = $false }
+  }
+  return $has
 }
 
-# Create diff directory for updates
-if (!$IsNewInstall) {
-    if (Test-Path $DiffDir) {
-        Remove-Item -Recurse -Force $DiffDir
+# Discover MCP servers by scanning .claude/mcp + common paths
+function Discover-MCP {
+  $servers = @()
+  $candidateDirs = @(".\.claude\mcp", ".\mcp", ".\config\mcp")
+  foreach ($dir in $candidateDirs) {
+    if (Test-Path $dir) {
+      Get-ChildItem -Path $dir -Filter *.json -File -Recurse | ForEach-Object {
+        try {
+          $json = Get-Content $_.FullName -Raw | ConvertFrom-Json
+          $name = if ($json.name) { $json.name } else { [System.IO.Path]::GetFileNameWithoutExtension($_.Name) }
+          $servers += @{ name=$name; path=$_.FullName }
+        } catch { }
+      }
     }
-    New-Item -ItemType Directory -Path $DiffDir | Out-Null
+  }
+  return $servers | Sort-Object -Property name -Unique
 }
 
-# Copy function with smart handling
+# Append/refresh MCP registry block between markers in claude.md
+function Update-RegistryBlock {
+  param([string]$ClaudePath, [array]$Servers)
+  if (!(Test-Path $ClaudePath)) { return }
+
+  $content = Get-Content $ClaudePath -Raw
+  $begin = "# BEGIN-AUTO-REGISTRY"
+  $end   = "# END-AUTO-REGISTRY"
+
+  $lines = @()
+  $lines += ""
+  $lines += $begin
+  $lines += "# Auto-generated agent & MCP registry - do not edit between markers"
+  $lines += "# Agents:"
+  $lines += "# - @coder, @tester, @research, @integrator, @stuck"
+  $lines += "# - @master-fullstack, @master-devops, @master-docs, @master-data"
+  $lines += "# MCP Servers:"
+  foreach ($s in $Servers) { $lines += "# - $($s.name) -> $($s.path)" }
+  $lines += $end
+  $block = ($lines -join "`r`n")
+
+  if ($content -notmatch [regex]::Escape($begin)) {
+    $content = $content + "`r`n" + $block + "`r`n"
+  } else {
+    $pattern = "(?s)$([regex]::Escape($begin)).*?$([regex]::Escape($end))"
+    $content = [regex]::Replace($content, $pattern, [System.Text.RegularExpressions.MatchEvaluator]{ param($m) $block })
+  }
+
+  if (-not $DryRun) {
+    $content | Set-Content $ClaudePath -Encoding utf8
+  }
+  Write-Log "Updated registry block in claude.md"
+}
+
+# Smart copy with .new + .diff (idempotent)
 function Copy-SmartFile {
-    param(
-        [string]$Source,
-        [string]$Target,
-        [string]$RelPath
-    )
-    
-    $targetExists = Test-Path $Target
-    
-    if (!$targetExists) {
-        # File doesn't exist - copy it
-        $targetParent = Split-Path -Parent $Target
-        if (!(Test-Path $targetParent)) {
-            New-Item -ItemType Directory -Path $targetParent -Force | Out-Null
-        }
-        Copy-Item $Source $Target
-        Write-Host "  + $RelPath" -ForegroundColor Green
-        return "created"
-    } else {
-        # File exists - create .new and diff
-        $newFile = "$Target.new"
-        Copy-Item $Source $newFile
-        
-        # Generate diff
-        $diffFile = Join-Path $DiffDir "$RelPath.diff"
-        $diffParent = Split-Path -Parent $diffFile
-        if (!(Test-Path $diffParent)) {
-            New-Item -ItemType Directory -Path $diffParent -Force | Out-Null
-        }
-        
-        $sourceContent = Get-Content $Source -Raw
-        $targetContent = Get-Content $Target -Raw
-        
-        if ($sourceContent -ne $targetContent) {
-            "=== $RelPath ===" | Out-File $diffFile
-            "<<< YOUR VERSION" | Out-File $diffFile -Append
-            $targetContent | Out-File $diffFile -Append
-            "===" | Out-File $diffFile -Append
-            ">>> NEW VERSION" | Out-File $diffFile -Append
-            $sourceContent | Out-File $diffFile -Append
-            
-            Write-Host "  ≠ $RelPath (see .new file and diff)" -ForegroundColor Yellow
-            return "differs"
-        } else {
-            Remove-Item $newFile
-            Write-Host "  = $RelPath" -ForegroundColor Gray
-            return "same"
-        }
+  param(
+    [string]$Source,
+    [string]$Target,
+    [string]$RelPath,
+    [switch]$SkipIfPlaywright
+  )
+
+  # Skip overwriting Playwright core config/tests if user already has Playwright
+  if ($SkipIfPlaywright -and (Detect-Playwright)) {
+    # Only allow namespaced E2E templates to be added, not core config files
+    $isCore = $RelPath -match "(?i)playwright\.config\.(js|ts|mjs|cjs)$" -or $RelPath -match "(?i)^tests[\\/](e2e|playwright)[\\/]"
+    if ($isCore) {
+      Write-Host "  ↷ $RelPath (Playwright detected; core preserved)" -ForegroundColor Cyan
+      Write-Log "Skipped Playwright core: $RelPath"
+      return "skipped"
     }
+  }
+
+  $targetExists = Test-Path $Target
+  if ($DryRun) {
+    $action = if ($targetExists) { "compare" } else { "create" }
+    Write-Host "  (dry-run) $action $RelPath" -ForegroundColor DarkGray
+    Write-Log "(dry-run) $action $RelPath"
+    return (if ($targetExists) { "same" } else { "created" })
+  }
+
+  if (!$targetExists) {
+    $targetParent = Split-Path -Parent $Target
+    if (!(Test-Path $targetParent)) { New-Item -ItemType Directory -Path $targetParent -Force | Out-Null }
+    Copy-Item $Source $Target
+    Write-Host "  + $RelPath" -ForegroundColor Green
+    Write-Log "Created $RelPath"
+    return "created"
+  } else {
+    $newFile = "$Target.new"
+    Copy-Item $Source $newFile
+
+    $diffFile = Join-Path $DiffDir "$RelPath.diff"
+    $diffParent = Split-Path -Parent $diffFile
+    if (!(Test-Path $diffParent)) { New-Item -ItemType Directory -Path $diffParent -Force | Out-Null }
+
+    $sourceContent = Get-Content $Source -Raw
+    $targetContent = Get-Content $Target -Raw
+
+    if ($sourceContent -ne $targetContent) {
+      "=== $RelPath ===" | Out-File $diffFile -Encoding utf8
+      "<<< YOUR VERSION" | Out-File $diffFile -Append -Encoding utf8
+      $targetContent | Out-File $diffFile -Append -Encoding utf8
+      "===" | Out-File $diffFile -Append -Encoding utf8
+      ">>> NEW VERSION" | Out-File $diffFile -Append -Encoding utf8
+      $sourceContent | Out-File $diffFile -Append -Encoding utf8
+      Write-Host "  ≠ $RelPath (see .new & diff)" -ForegroundColor Yellow
+      Write-Log "Differs $RelPath"
+      return "differs"
+    } else {
+      Remove-Item $newFile -Force
+      Write-Host "  = $RelPath" -ForegroundColor Gray
+      Write-Log "Same $RelPath"
+      return "same"
+    }
+  }
 }
 
-# Copy files
-Write-Host "Copying files..." -ForegroundColor Yellow
+$IsNewInstall = !(Test-Path $TargetDir)
+if ($IsNewInstall) {
+  Write-Host "NEW INSTALLATION → $TargetDir" -ForegroundColor Green
+} else {
+  Write-Host "EXISTING INSTALLATION → updating $TargetDir (preserving your files)" -ForegroundColor Yellow
+}
+
+if (!($DryRun) -and !(Test-Path $TargetDir)) { New-Item -ItemType Directory -Path $TargetDir | Out-Null }
+if (!$IsNewInstall) {
+  if (!($DryRun)) {
+    if (Test-Path $DiffDir) { Remove-Item -Recurse -Force $DiffDir }
+    New-Item -ItemType Directory -Path $DiffDir | Out-Null
+  }
+}
+
+Write-Host "`nDetecting environment..." -ForegroundColor Yellow
+$HasPlaywright = Detect-Playwright
+$McpServers    = @()
+if (!$SkipDetection) { $McpServers = Discover-MCP }
+
+Write-Host ("• Playwright: " + ($(if ($HasPlaywright) { "present" } else { "not found" })))
+if ($McpServers.Count -gt 0) {
+  Write-Host ("• MCP servers: " + ($McpServers.name -join ", "))
+} else {
+  Write-Host "• MCP servers: none discovered"
+}
+
+Write-Host "`nCopying files..." -ForegroundColor Yellow
 $stats = @{created=0; differs=0; same=0; skipped=0}
 
 Get-ChildItem -Path $TemplateDir -Recurse -File | ForEach-Object {
-    $relPath = $_.FullName.Substring($TemplateDir.Length + 1)
-    $targetPath = Join-Path $TargetDir $relPath
-    
-    # Skip Playwright files if detected
-    if ($HasPlaywright -and $relPath -like "*playwright*") {
-        Write-Host "  ↷ $relPath (Playwright detected, skipping)" -ForegroundColor Cyan
-        $stats.skipped++
-        return
-    }
-    
-    $result = Copy-SmartFile -Source $_.FullName -Target $targetPath -RelPath $relPath
-    $stats[$result]++
+  $relPath   = $_.FullName.Substring($TemplateDir.Length + 1)
+  $targetPath= Join-Path $TargetDir $relPath
+
+  $skipPlay = $relPath -match "(?i)playwright"
+  $result = Copy-SmartFile -Source $_.FullName -Target $targetPath -RelPath $relPath -SkipIfPlaywright:$skipPlay
+  if ($stats.ContainsKey($result)) { $stats[$result]++ }
 }
 
-Write-Host ""
-
-# Handle claude.md agent registry
+# Update registry block with discovered MCP
 $claudeMdPath = Join-Path $TargetDir "claude.md"
-if (Test-Path $claudeMdPath) {
-    Write-Host "Updating agent registry in claude.md..." -ForegroundColor Yellow
-    
-    $content = Get-Content $claudeMdPath -Raw
-    
-    # Check if registry markers exist
-    if ($content -notmatch "# BEGIN-AUTO-REGISTRY") {
-        # Add registry section
-        $registry = @"
+Update-RegistryBlock -ClaudePath $claudeMdPath -Servers $McpServers
 
-# BEGIN-AUTO-REGISTRY
-# Auto-generated agent registry - do not edit between markers
-# Available agents:
-# - @coder - Full-stack implementation
-# - @tester - Playwright E2E + validation
-# - @research - Web/doc research
-# - @integrator - Merge outputs, resolve conflicts
-# - @stuck - Pattern recognition, escalation
-# - @master-fullstack - Completeness verification
-# - @master-devops - CI/CD with guardrails
-# - @master-docs - Documentation generation
-# - @master-data - Data operations
-# END-AUTO-REGISTRY
-"@
-        $content += $registry
-        $content | Set-Content $claudeMdPath
-        Write-Host "  ✓ Added agent registry" -ForegroundColor Green
-    } else {
-        Write-Host "  = Registry already present" -ForegroundColor Gray
-    }
-}
-
-Write-Host ""
-
-# Report results
-Write-Host "=== Installation Summary ===" -ForegroundColor Cyan
-Write-Host "Created:  $($stats.created) files" -ForegroundColor Green
-Write-Host "Updated:  $($stats.differs) files (see .new and diffs)" -ForegroundColor Yellow
-Write-Host "Same:     $($stats.same) files" -ForegroundColor Gray
-Write-Host "Skipped:  $($stats.skipped) files" -ForegroundColor Cyan
+Write-Host "`n=== Installation Summary ===" -ForegroundColor Cyan
+Write-Host ("Created : {0}" -f $stats.created) -ForegroundColor Green
+Write-Host ("Updated : {0}" -f $stats.differs) -ForegroundColor Yellow
+Write-Host ("Same    : {0}" -f $stats.same) -ForegroundColor Gray
+Write-Host ("Skipped : {0}" -f $stats.skipped) -ForegroundColor Cyan
+Write-Host ("Log     : {0}" -f $LogPath) -ForegroundColor Gray
 
 if ($stats.differs -gt 0) {
-    Write-Host ""
-    Write-Host "Review changes in:" -ForegroundColor Yellow
-    Write-Host "  - .new files in .claude/" -ForegroundColor Gray
-    Write-Host "  - Diffs in .claude/_install-diff/" -ForegroundColor Gray
+  Write-Host "`nReview changes:" -ForegroundColor Yellow
+  Write-Host "  - .claude\*.new (side-by-side)" -ForegroundColor Gray
+  Write-Host "  - $DiffDir\*.diff" -ForegroundColor Gray
 }
 
-Write-Host ""
-
-# Next steps
-Write-Host "=== Next Steps ===" -ForegroundColor Cyan
-
+Write-Host "`n=== Next Steps ===" -ForegroundColor Cyan
 if ($IsNewInstall) {
-    Write-Host "1. Copy example config:" -ForegroundColor White
-    Write-Host "   Copy-Item .claude\config.example.yaml .claude\config.yaml" -ForegroundColor Gray
-    Write-Host ""
-    Write-Host "2. Edit configuration:" -ForegroundColor White
-    Write-Host "   - Set project_type (nextjs_fullstack, api_only, etc.)" -ForegroundColor Gray
-    Write-Host "   - Configure paths for your project" -ForegroundColor Gray
-    Write-Host "   - Set autonomy mode (trusted or review_each_step)" -ForegroundColor Gray
+  Write-Host "1) Copy example config:" -ForegroundColor White
+  Write-Host "   Copy-Item .claude\config.example.yaml .claude\config.yaml" -ForegroundColor Gray
 } else {
-    Write-Host "1. Review updated files (.new and diffs)" -ForegroundColor White
-    Write-Host "2. Merge changes you want to keep" -ForegroundColor White
-    Write-Host "3. Remove .new files when done" -ForegroundColor White
+  Write-Host "1) Review updated files (.new & .diff) then merge desired changes" -ForegroundColor White
+}
+Write-Host "2) Start using the orchestrator (@research / @coder / @tester ...)" -ForegroundColor White
+
+# Offer Playwright install (safe)
+if (!$HasPlaywright -and !$SkipDetection -and -not $DryRun) {
+  $response = Read-Host "Playwright not detected. Install now? (y/N)"
+  if ($response -match '^[Yy]$') {
+    Write-Host "`nInstalling Playwright..." -ForegroundColor Yellow
+    npm install -D @playwright/test
+    npx playwright install
+    Write-Host "✓ Playwright installed" -ForegroundColor Green
+  }
 }
 
-Write-Host ""
-Write-Host "3. Start using the orchestrator:" -ForegroundColor White
-Write-Host "   @research - Find best practices for [topic]" -ForegroundColor Gray
-
-Write-Host ""
-
-# Offer Playwright installation
-if (!$HasPlaywright -and !$SkipDetection) {
-    $response = Read-Host "Playwright not detected. Install now? (y/N)"
-    if ($response -eq 'y' -or $response -eq 'Y') {
-        Write-Host ""
-        Write-Host "Installing Playwright..." -ForegroundColor Yellow
-        npm install -D @playwright/test
-        npx playwright install
-        Write-Host "✓ Playwright installed" -ForegroundColor Green
-    }
-}
-
-Write-Host ""
-Write-Host "✓ Installation complete!" -ForegroundColor Green
-Write-Host ""
+Write-Host "`n✓ Installation complete!" -ForegroundColor Green
