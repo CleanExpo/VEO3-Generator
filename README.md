@@ -31,7 +31,26 @@ cd your-project
 
 This copies orchestrator templates to `.claude/` in your project.
 
-### Configure
+### Initialize (Recommended - NEW!)
+
+**Automated initialization with auto-detection:**
+
+```
+Claude, initialize the orchestrator for my project
+```
+
+This will:
+- ✨ Auto-detect your project type and stack
+- 📋 Guide you through a quick questionnaire
+- ⚙️ Generate optimal configuration
+- ✅ Validate and verify setup
+- 🚀 Ready in 5 minutes
+
+[Read the Quick Start Guide](.claude/QUICK-START-INITIALIZATION.md)
+
+### Configure (Manual Alternative)
+
+If you prefer manual configuration:
 
 ```bash
 cp .claude/config.example.yaml .claude/config.yaml
@@ -50,6 +69,23 @@ autonomy: trusted
 ```
 
 ## Key Features
+
+### ✨ Smart Initialization (NEW!)
+
+**Auto-Detection & Guided Setup:**
+- 🔍 Automatically detects project type (15+ types supported)
+- 📊 Confidence scoring with alternatives
+- 📋 Interactive questionnaire for preferences
+- ⚙️ Generates optimal configuration
+- ✅ Validates setup before first task
+
+**Supported Project Types:**
+- Frontend: Next.js, React SPA, Vue, Svelte
+- Backend: Node.js API, Python API, GraphQL
+- Full-Stack: Next.js Full-Stack, T3 Stack, Remix, Django
+- Specialized: Monorepos, CLI tools, NPM packages, Chrome extensions
+
+[Learn More](.claude/INITIALIZATION-WORKFLOW.md)
 
 ### 🎯 Specialized Agents
 
@@ -271,11 +307,22 @@ steps:
 
 ## Documentation
 
+### Quick Start & Initialization (NEW!)
+- **[Quick Start Initialization](.claude/QUICK-START-INITIALIZATION.md)** - ⚡ 5-minute guided setup
+- **[Initialization Workflow](.claude/INITIALIZATION-WORKFLOW.md)** - 📖 Complete initialization guide
+- **[Project Detection Rules](.claude/detection/project-detection-rules.yaml)** - 🔍 Auto-detection system
+
+### Core Documentation
 - **[Getting Started](docs/getting-started.md)** - One command setup
 - **[Rationale](docs/rationale.md)** - Why this architecture
 - **[Safety & Security](docs/safety.md)** - Security guidelines
 - **[Customizing](docs/customizing.md)** - Extend the orchestrator
 - **[Windows Notes](docs/windows-notes.md)** - Windows-specific help
+
+### Policies & Configuration
+- **[Handoff Validation](.claude/policies/handoff-validation.yaml)** - 🔄 Agent handoff quality
+- **[Guardrails](.claude/policies/guardrails.md)** - 🛡️ Safety rules
+- **[Handoffs](.claude/policies/handoffs.md)** - 🤝 Agent coordination
 
 ## Requirements
 

@@ -1,0 +1,579 @@
+# Handoff Validation Rules
+# Ensures quality and completeness of agent-to-agent handoffs
+
+version: "1.0.0"
+description: "Validation rules for inter-agent handoffs with auto-repair capabilities"
+
+# ============================================================================
+# VALIDATION CONFIGURATION
+# ============================================================================
+
+validation:
+  enabled: true
+  strict_mode: false                   # true = error on failure, false = warn
+  auto_repair: true                    # Attempt to fix missing fields
+  max_repair_attempts: 1               # How many times to try auto-repair
+  max_handoff_retries: 2              # How many times agent can retry handoff
+  escalate_after_failures: 2           # Escalate to user after N failures
+
+  # When to validate
+  validate_on:
+    - agent_handoff                    # Every agent-to-agent handoff
+    - workflow_transition              # Between workflow phases
+    - phase_gate                       # At phase gates (e.g., before Integrator)
+
+# ============================================================================
+# HANDOFF SCHEMA
+# ============================================================================
+
+handoff_schema:
+  version: "1.0.0"
+
+  # Required fields (must be present)
+  required_fields:
+    - handoff_schema_version          # Schema version (semver)
+    - trace_id                        # UUID v4 for traceability
+    - timestamp                       # ISO-8601 timestamp
+    - from_agent                      # Source agent name
+    - to_agent                        # Target agent name
+    - context                         # Context object
+
+  # Strongly recommended fields (warn if missing)
+  recommended_fields:
+    - requirements                    # Requirements for target agent
+    - next_steps                      # Suggested next steps
+    - acceptance_criteria             # What "done" looks like
+
+  # Optional fields (nice to have)
+  optional_fields:
+    - metadata                        # Additional metadata
+    - attachments                     # Links to artifacts
+    - warnings                        # Warnings for target agent
+    - estimated_duration              # Estimated time for task
+
+# ============================================================================
+# FIELD VALIDATION RULES
+# ============================================================================
+
+field_validation:
+
+  # Schema Version
+  handoff_schema_version:
+    type: "string"
+    format: "semver"                  # e.g., "1.0.0"
+    required: true
+    auto_repair: "use_latest"         # Auto-fill with latest version
+
+  # Trace ID
+  trace_id:
+    type: "string"
+    format: "uuid_v4"                 # UUID v4 format
+    required: true
+    auto_repair: "generate"           # Generate new UUID if missing
+
+  # Timestamp
+  timestamp:
+    type: "string"
+    format: "iso_8601"                # ISO-8601 format
+    required: true
+    auto_repair: "generate_current"   # Use current time if missing
+
+  # From Agent
+  from_agent:
+    type: "string"
+    required: true
+    validation:
+      - must_be_valid_agent_name      # Must match known agent
+      - cannot_be_empty
+
+  # To Agent
+  to_agent:
+    type: "string"
+    required: true
+    validation:
+      - must_be_valid_agent_name
+      - cannot_be_empty
+      - cannot_equal_from_agent       # Can't hand off to self
+
+  # Context
+  context:
+    type: "object"
+    required: true
+    minimum_fields: 1                 # Must have at least one field
+    auto_repair: "create_empty_object"  # Create {} if missing
+
+  # Requirements
+  requirements:
+    type: "object"
+    required: false
+    recommended: true
+    validation:
+      - should_have_actionable_items
+
+  # Next Steps
+  next_steps:
+    type: "array"
+    required: false
+    recommended: true
+    validation:
+      - should_have_at_least_one_item
+
+  # Acceptance Criteria
+  acceptance_criteria:
+    type: "array"
+    required: false
+    recommended: true
+    validation:
+      - items_should_be_testable
+
+# ============================================================================
+# AGENT-SPECIFIC VALIDATION
+# ============================================================================
+
+agent_specific_validation:
+
+  # Research → Any
+  from_research:
+    required_context_fields:
+      - summary                       # Summary of findings
+      - sources                       # List of sources
+    recommended_context_fields:
+      - constraints                   # Identified constraints
+      - recommendations               # Recommendations
+      - risks                         # Potential risks
+
+  # Master-Fullstack → Coder
+  from_master_fullstack:
+    required_context_fields:
+      - verified_requirements         # List of requirements
+      - missing_pieces_check          # Completeness check
+      - proceed                       # Boolean: ok to proceed?
+    required_if_proceed_false:
+      - missing_pieces                # What's missing
+      - blocking_issues               # What's blocking
+
+  # Coder → Tester
+  from_coder:
+    required_context_fields:
+      - changed_files                 # List of modified files
+      - acceptance_criteria           # What to test
+    recommended_context_fields:
+      - run_steps                     # How to run tests
+      - test_data                     # Test data needed
+      - environment_setup             # Env setup required
+    validation_rules:
+      - changed_files_must_exist      # Files must actually exist
+      - acceptance_criteria_must_be_testable
+
+  # Tester → Integrator (success path)
+  from_tester_success:
+    required_context_fields:
+      - test_results                  # Test results object
+      - test_files                    # List of test files
+      - ready_for_integration         # Boolean: ready?
+    validation_rules:
+      - test_results_must_show_passing  # All tests passed
+      - ready_for_integration_must_be_true
+
+  # Tester → Stuck (failure path)
+  from_tester_failure:
+    required_context_fields:
+      - failing_tests                 # List of failing tests
+      - test_output                   # Error output
+      - suspected_causes              # Possible causes
+    recommended_context_fields:
+      - options                       # Suggested fixes
+      - recommendation                # Recommended approach
+
+  # Stuck → Any
+  from_stuck:
+    required_context_fields:
+      - pattern                       # Recognized pattern (or "unknown")
+      - options                       # A/B/C options
+    recommended_context_fields:
+      - recommendation                # Recommended option
+      - rationale                     # Why this recommendation
+
+  # Integrator → Master-DevOps/Master-Docs
+  from_integrator:
+    required_context_fields:
+      - integration_complete          # Boolean
+      - files_integrated              # List of files
+      - build_passing                 # Boolean
+    recommended_context_fields:
+      - imports_resolved              # Boolean
+      - conflicts_resolved            # List (empty if none)
+      - environment_variables_needed  # List of env vars
+
+# ============================================================================
+# WORKFLOW-SPECIFIC VALIDATION
+# ============================================================================
+
+workflow_validation:
+
+  # Feature Workflow
+  feature_workflow:
+    phases:
+      - phase: "research_to_fullstack"
+        required_handoff_fields:
+          - research_summary
+          - sources
+          - constraints
+
+      - phase: "fullstack_to_coder"
+        required_handoff_fields:
+          - verified_requirements
+          - proceed
+
+      - phase: "coder_to_tester"
+        required_handoff_fields:
+          - changed_files
+          - acceptance_criteria
+
+      - phase: "tester_to_integrator"
+        phase_gate: true              # This is a phase gate
+        blocking: true                # Block if validation fails
+        required_handoff_fields:
+          - test_results
+          - ready_for_integration
+        validation_rules:
+          - tests_must_pass           # Critical: tests must pass
+
+  # Bugfix Workflow
+  bugfix_workflow:
+    phases:
+      - phase: "research_to_stuck"
+        required_handoff_fields:
+          - issue_description
+          - error_output
+
+      - phase: "stuck_to_coder"
+        required_handoff_fields:
+          - pattern
+          - recommended_solution
+
+      - phase: "coder_to_tester"
+        required_handoff_fields:
+          - changed_files
+          - regression_test_needed
+
+# ============================================================================
+# AUTO-REPAIR STRATEGIES
+# ============================================================================
+
+auto_repair_strategies:
+
+  # Generate missing UUID
+  generate_trace_id:
+    condition: "trace_id is missing"
+    action: "generate UUID v4"
+    example: "550e8400-e29b-41d4-a716-446655440000"
+
+  # Generate missing timestamp
+  generate_timestamp:
+    condition: "timestamp is missing"
+    action: "use current ISO-8601 timestamp"
+    example: "2024-01-15T10:30:00Z"
+
+  # Fill schema version
+  fill_schema_version:
+    condition: "handoff_schema_version is missing"
+    action: "use latest schema version"
+    value: "1.0.0"
+
+  # Create empty context
+  create_empty_context:
+    condition: "context is missing"
+    action: "create empty object"
+    value: {}
+    warning: "Context was empty and has been initialized"
+
+  # Infer from_agent
+  infer_from_agent:
+    condition: "from_agent is missing but can be inferred from workflow state"
+    action: "use current agent name from workflow context"
+
+  # Convert string to array
+  convert_to_array:
+    condition: "field should be array but is string"
+    action: "wrap string in array"
+    example: "next_steps: 'do this' → next_steps: ['do this']"
+
+  # Add missing boolean
+  add_missing_boolean:
+    condition: "boolean field missing and can infer from context"
+    action: "infer from other fields"
+    example: "ready_for_integration inferred from test_results.passed === true"
+
+# ============================================================================
+# VALIDATION ERROR MESSAGES
+# ============================================================================
+
+error_messages:
+
+  missing_required_field:
+    message: "Required field '{field}' is missing from handoff"
+    severity: "error"
+    suggestion: "Add the '{field}' field to the handoff object"
+
+  invalid_format:
+    message: "Field '{field}' has invalid format. Expected {expected}, got {actual}"
+    severity: "error"
+    suggestion: "Ensure '{field}' follows the {expected} format"
+
+  missing_recommended_field:
+    message: "Recommended field '{field}' is missing from handoff"
+    severity: "warning"
+    suggestion: "Consider adding '{field}' for better context transfer"
+
+  validation_rule_failed:
+    message: "Validation rule '{rule}' failed for field '{field}'"
+    severity: "error"
+    suggestion: "Review the '{rule}' requirement and fix '{field}'"
+
+  auto_repair_succeeded:
+    message: "Auto-repaired field '{field}' with value '{value}'"
+    severity: "info"
+    suggestion: "Review the auto-repaired value to ensure it's correct"
+
+  auto_repair_failed:
+    message: "Could not auto-repair field '{field}'"
+    severity: "error"
+    suggestion: "Manually provide a valid value for '{field}'"
+
+  phase_gate_blocked:
+    message: "Phase gate '{gate}' blocked due to validation failure"
+    severity: "error"
+    suggestion: "Resolve validation errors before proceeding to next phase"
+
+# ============================================================================
+# RETRY POLICY
+# ============================================================================
+
+retry_policy:
+
+  # When to retry
+  retry_conditions:
+    - validation_failed: true
+    - auto_repair_succeeded: true
+    - attempt_count_less_than_max: true
+
+  # Retry strategy
+  strategy: "immediate"               # immediate | exponential_backoff
+
+  # What to do on retry
+  on_retry:
+    - log_retry_attempt
+    - include_validation_errors
+    - suggest_fixes
+    - show_auto_repairs
+
+  # When to stop retrying
+  stop_conditions:
+    - max_retries_exceeded
+    - auto_repair_failed
+    - agent_requested_escalation
+    - user_intervention_needed
+
+# ============================================================================
+# ESCALATION POLICY
+# ============================================================================
+
+escalation_policy:
+
+  # When to escalate to user
+  escalate_conditions:
+    - validation_failed_after_max_retries: true
+    - auto_repair_not_possible: true
+    - phase_gate_blocked: true
+    - critical_field_missing: true
+
+  # What to include in escalation
+  escalation_includes:
+    - current_handoff_attempt         # The handoff that failed
+    - validation_errors               # List of errors
+    - auto_repair_attempts            # What was tried
+    - suggested_fixes                 # How to fix
+    - workflow_context                # Where we are in workflow
+
+  # Escalation message template
+  escalation_message: |
+    ⚠️ Handoff Validation Failed
+
+    The handoff from {from_agent} to {to_agent} failed validation:
+
+    Errors:
+    {validation_errors}
+
+    Auto-repair attempts:
+    {auto_repair_attempts}
+
+    Suggested fixes:
+    {suggested_fixes}
+
+    Options:
+    1. Let me try again with corrections
+    2. Skip validation for this handoff (not recommended)
+    3. Adjust the handoff requirements
+    4. Abort this workflow
+
+    What would you like to do?
+
+# ============================================================================
+# OBSERVABILITY
+# ============================================================================
+
+observability:
+
+  # Metrics to track
+  metrics:
+    - handoff_validation_attempts     # Total validations
+    - handoff_validation_failures     # Failed validations
+    - auto_repair_success_rate        # % of successful repairs
+    - escalation_frequency            # How often we escalate
+    - validation_latency              # Time to validate
+
+  # Logging
+  logging:
+    enabled: true
+    log_level: "info"                 # debug | info | warn | error
+    log_location: ".claude/logs/handoff-validation/"
+
+    log_events:
+      - validation_started
+      - validation_completed
+      - validation_failed
+      - auto_repair_attempted
+      - auto_repair_succeeded
+      - auto_repair_failed
+      - retry_attempted
+      - escalation_triggered
+
+  # Reports
+  reports:
+    enabled: true
+    frequency: "daily"
+    report_location: ".claude/reports/handoff-validation/"
+
+    include_metrics:
+      - success_rate_by_agent_pair    # Which handoffs work well
+      - common_validation_failures    # What fails most often
+      - auto_repair_effectiveness     # How well auto-repair works
+      - escalation_patterns           # When/why we escalate
+
+# ============================================================================
+# PHASE GATE ENFORCEMENT
+# ============================================================================
+
+phase_gate_enforcement:
+
+  # Tester → Integrator (Critical Gate)
+  tester_to_integrator:
+    enabled: true
+    blocking: true                    # Block if validation fails
+    strict_validation: true           # No warnings, only errors
+
+    required_validations:
+      - test_results_present: true
+      - all_tests_passed: true
+      - test_coverage_adequate: true
+      - ready_for_integration_true: true
+
+    failure_actions:
+      - block_progression
+      - return_to_coder               # If tests fail, go back to coder
+      - escalate_to_stuck             # If persistent failures
+      - notify_user
+
+  # Integrator → DevOps (Optional Gate)
+  integrator_to_devops:
+    enabled: false                    # Disabled by default
+    blocking: false                   # Warn but don't block
+
+    required_validations:
+      - build_passing: true
+      - no_conflicts: true
+      - integration_complete: true
+
+    failure_actions:
+      - warn_user
+      - request_confirmation
+      - log_issue
+
+  # Production Deployment Gate
+  production_deployment:
+    enabled: true
+    blocking: true
+    strict_validation: true
+
+    required_validations:
+      - all_tests_passed: true
+      - staging_verified: true
+      - manual_approval_received: true
+      - no_critical_issues: true
+
+    failure_actions:
+      - block_deployment
+      - escalate_to_user
+      - require_explicit_override
+
+# ============================================================================
+# EXAMPLES
+# ============================================================================
+
+examples:
+
+  # Valid Handoff Example
+  valid_handoff:
+    handoff_schema_version: "1.0.0"
+    trace_id: "550e8400-e29b-41d4-a716-446655440000"
+    timestamp: "2024-01-15T10:30:00Z"
+    from_agent: "coder"
+    to_agent: "tester"
+    context:
+      changed_files:
+        - "src/app/api/auth/route.ts"
+        - "src/app/login/page.tsx"
+      acceptance_criteria:
+        - "Login page renders correctly"
+        - "Email/password login works"
+        - "Protected routes enforce authentication"
+      run_steps:
+        - "pnpm build"
+        - "pnpm test:e2e"
+    requirements:
+      must_test:
+        - "Login flow"
+        - "Auth protection"
+      must_verify:
+        - "No console errors"
+        - "Proper redirects"
+
+  # Invalid Handoff (missing required fields)
+  invalid_handoff:
+    from_agent: "coder"
+    to_agent: "tester"
+    context:
+      changed_files: []
+    # Missing: trace_id, timestamp, handoff_schema_version
+    # Incomplete: context missing acceptance_criteria
+
+  # Auto-Repaired Handoff
+  auto_repaired_handoff:
+    original:
+      from_agent: "coder"
+      to_agent: "tester"
+      context:
+        changed_files: ["src/app/page.tsx"]
+    repaired:
+      handoff_schema_version: "1.0.0"  # Added
+      trace_id: "generated-uuid"        # Generated
+      timestamp: "2024-01-15T10:30:00Z" # Generated
+      from_agent: "coder"
+      to_agent: "tester"
+      context:
+        changed_files: ["src/app/page.tsx"]
+    repairs_applied:
+      - "Generated trace_id"
+      - "Added current timestamp"
+      - "Filled schema version"

@@ -1,0 +1,798 @@
+# Project Type Auto-Detection Rules
+# Used by the orchestrator to automatically identify project types
+
+version: "1.0.0"
+description: "Detection rules for identifying project types from codebase analysis"
+
+# ============================================================================
+# DETECTION METHODOLOGY
+# ============================================================================
+detection_methodology:
+  approach: "multi_signal"             # Combine multiple signals for accuracy
+  confidence_threshold: 0.7            # Minimum confidence to auto-select
+  show_alternatives_if: 0.6            # Show alternatives if confidence < threshold
+
+  # Signal weights
+  signal_weights:
+    file_patterns: 0.35                # 35% weight
+    package_manifest: 0.30             # 30% weight
+    directory_structure: 0.20          # 20% weight
+    config_files: 0.10                 # 10% weight
+    imports_dependencies: 0.05         # 5% weight
+
+# ============================================================================
+# PROJECT TYPE DEFINITIONS
+# ============================================================================
+
+project_types:
+
+  # ==========================================================================
+  # FRONTEND PROJECTS
+  # ==========================================================================
+
+  nextjs_app:
+    name: "Next.js Application"
+    category: "frontend"
+    description: "Next.js React application (App Router or Pages Router)"
+
+    detection_rules:
+      required_signals:
+        - type: "file"
+          patterns: ["next.config.js", "next.config.ts", "next.config.mjs"]
+          confidence: 0.9
+
+        - type: "directory"
+          patterns: ["app/", "pages/"]
+          match: "any"                 # Match any of the patterns
+          confidence: 0.8
+
+      strong_signals:
+        - type: "package"
+          name: "next"
+          confidence: 0.9
+
+        - type: "package"
+          name: "react"
+          confidence: 0.7
+
+      moderate_signals:
+        - type: "directory"
+          patterns: ["public/", "styles/"]
+          confidence: 0.3
+
+      confidence_modifiers:
+        has_app_directory: +0.2        # Modern App Router
+        has_pages_directory: +0.1      # Pages Router
+        has_api_routes: -0.1           # Suggests fullstack (see nextjs_fullstack)
+
+    recommended_config:
+      agents:
+        coder: true
+        tester: true
+        research: true
+        master_fullstack: false
+        master_docs: true
+
+      paths:
+        app: "./src/app"
+        components: "./src/components"
+        lib: "./src/lib"
+        public: "./public"
+
+  # --------------------------------------------------------------------------
+
+  nextjs_fullstack:
+    name: "Next.js Full-Stack Application"
+    category: "fullstack"
+    description: "Next.js with backend API routes and database"
+
+    detection_rules:
+      required_signals:
+        - type: "file"
+          patterns: ["next.config.js", "next.config.ts", "next.config.mjs"]
+          confidence: 0.9
+
+        - type: "directory"
+          patterns: ["app/api/", "pages/api/"]
+          match: "any"
+          confidence: 0.8
+
+      strong_signals:
+        - type: "package"
+          names: ["@prisma/client", "drizzle-orm", "mongoose", "pg", "mysql2"]
+          match: "any"
+          confidence: 0.8
+
+        - type: "file"
+          patterns: ["prisma/schema.prisma", "drizzle.config.ts"]
+          match: "any"
+          confidence: 0.7
+
+      confidence_modifiers:
+        has_database_package: +0.3
+        has_orm: +0.2
+        has_api_directory: +0.2
+        has_env_example: +0.1
+
+    recommended_config:
+      agents:
+        coder: true
+        tester: true
+        research: true
+        master_fullstack: true         # Critical for fullstack
+        master_data: true
+        master_docs: true
+
+      paths:
+        app: "./src/app"
+        api: "./src/app/api"
+        components: "./src/components"
+        lib: "./src/lib"
+
+  # --------------------------------------------------------------------------
+
+  react_spa:
+    name: "React Single Page Application"
+    category: "frontend"
+    description: "React SPA with client-side routing"
+
+    detection_rules:
+      required_signals:
+        - type: "package"
+          name: "react"
+          confidence: 0.9
+
+        - type: "file"
+          patterns: ["index.html"]
+          in_directory: [".", "public/"]
+          confidence: 0.7
+
+      strong_signals:
+        - type: "package"
+          names: ["react-dom", "react-router-dom"]
+          confidence: 0.7
+
+        - type: "package"
+          names: ["vite", "webpack", "esbuild"]
+          match: "any"
+          confidence: 0.6
+
+      exclusions:
+        - has_next_config: true        # Would be nextjs_app
+        - has_server_files: true       # Would be fullstack
+
+      confidence_modifiers:
+        has_vite_config: +0.2
+        has_src_directory: +0.1
+        no_backend_files: +0.2
+
+    recommended_config:
+      agents:
+        coder: true
+        tester: true
+        research: true
+        master_fullstack: false
+        master_docs: true
+
+  # --------------------------------------------------------------------------
+
+  vue_app:
+    name: "Vue.js Application"
+    category: "frontend"
+    description: "Vue.js application (Vue 2 or Vue 3)"
+
+    detection_rules:
+      required_signals:
+        - type: "package"
+          name: "vue"
+          confidence: 0.9
+
+      strong_signals:
+        - type: "file"
+          patterns: ["vite.config.js", "vite.config.ts", "vue.config.js"]
+          match: "any"
+          confidence: 0.7
+
+        - type: "package"
+          names: ["@vitejs/plugin-vue", "vue-router", "pinia", "vuex"]
+          match: "any"
+          confidence: 0.6
+
+      confidence_modifiers:
+        has_vue_files: +0.2
+        has_vite: +0.1
+
+    recommended_config:
+      agents:
+        coder: true
+        tester: true
+        research: true
+
+  # --------------------------------------------------------------------------
+
+  svelte_app:
+    name: "Svelte/SvelteKit Application"
+    category: "frontend"
+    description: "Svelte or SvelteKit application"
+
+    detection_rules:
+      required_signals:
+        - type: "package"
+          names: ["svelte", "@sveltejs/kit"]
+          match: "any"
+          confidence: 0.9
+
+      strong_signals:
+        - type: "file"
+          patterns: ["svelte.config.js", "svelte.config.ts"]
+          confidence: 0.8
+
+        - type: "directory"
+          patterns: ["src/routes/"]
+          confidence: 0.7
+
+      confidence_modifiers:
+        has_sveltekit: +0.2
+        has_routes_directory: +0.2
+
+    recommended_config:
+      agents:
+        coder: true
+        tester: true
+        research: true
+
+  # ==========================================================================
+  # BACKEND PROJECTS
+  # ==========================================================================
+
+  node_api:
+    name: "Node.js API"
+    category: "backend"
+    description: "Node.js REST API (Express, Fastify, Koa, etc.)"
+
+    detection_rules:
+      required_signals:
+        - type: "package"
+          names: ["express", "fastify", "koa", "@hapi/hapi"]
+          match: "any"
+          confidence: 0.9
+
+      strong_signals:
+        - type: "file"
+          patterns: ["server.js", "server.ts", "app.js", "app.ts", "index.js", "index.ts"]
+          in_directory: [".", "src/"]
+          confidence: 0.6
+
+        - type: "directory"
+          patterns: ["routes/", "controllers/", "api/"]
+          match: "any"
+          confidence: 0.5
+
+      exclusions:
+        - has_frontend_framework: true
+
+      confidence_modifiers:
+        has_database: +0.2
+        has_routes_directory: +0.2
+        has_middleware: +0.1
+
+    recommended_config:
+      agents:
+        coder: true
+        tester: true
+        research: true
+        master_data: true
+        master_docs: true
+
+      paths:
+        api: "./src"
+        routes: "./src/routes"
+        controllers: "./src/controllers"
+        models: "./src/models"
+
+  # --------------------------------------------------------------------------
+
+  python_api:
+    name: "Python API"
+    category: "backend"
+    description: "Python API (FastAPI, Django REST, Flask)"
+
+    detection_rules:
+      required_signals:
+        - type: "file"
+          patterns: ["requirements.txt", "pyproject.toml", "Pipfile"]
+          match: "any"
+          confidence: 0.8
+
+        - type: "package_pip"
+          names: ["fastapi", "django", "flask", "djangorestframework"]
+          match: "any"
+          confidence: 0.9
+
+      strong_signals:
+        - type: "file"
+          patterns: ["main.py", "app.py", "manage.py"]
+          confidence: 0.6
+
+        - type: "package_pip"
+          names: ["uvicorn", "gunicorn"]
+          match: "any"
+          confidence: 0.5
+
+      confidence_modifiers:
+        has_fastapi: +0.3
+        has_django: +0.2
+        has_flask: +0.2
+
+    recommended_config:
+      agents:
+        coder: true
+        tester: true
+        research: true
+        master_data: true
+        master_docs: true
+
+      paths:
+        api: "./app"
+        routes: "./app/routes"
+        models: "./app/models"
+
+  # --------------------------------------------------------------------------
+
+  graphql_api:
+    name: "GraphQL API"
+    category: "backend"
+    description: "GraphQL server (Apollo, Hasura, etc.)"
+
+    detection_rules:
+      required_signals:
+        - type: "package"
+          names: ["@apollo/server", "apollo-server", "graphql-yoga", "type-graphql"]
+          match: "any"
+          confidence: 0.9
+
+      strong_signals:
+        - type: "package"
+          name: "graphql"
+          confidence: 0.8
+
+        - type: "file"
+          patterns: ["schema.graphql", "schema.gql"]
+          confidence: 0.7
+
+        - type: "directory"
+          patterns: ["resolvers/", "schema/"]
+          confidence: 0.5
+
+      confidence_modifiers:
+        has_schema_file: +0.2
+        has_resolvers: +0.2
+
+    recommended_config:
+      agents:
+        coder: true
+        tester: true
+        research: true
+        master_data: true
+
+  # --------------------------------------------------------------------------
+
+  serverless:
+    name: "Serverless Functions"
+    category: "backend"
+    description: "Serverless functions (AWS Lambda, Vercel, Netlify)"
+
+    detection_rules:
+      required_signals:
+        - type: "file"
+          patterns: ["serverless.yml", "vercel.json", "netlify.toml"]
+          match: "any"
+          confidence: 0.8
+
+      strong_signals:
+        - type: "directory"
+          patterns: ["functions/", "api/", "lambdas/"]
+          match: "any"
+          confidence: 0.6
+
+        - type: "package"
+          names: ["serverless", "@vercel/node", "@netlify/functions"]
+          match: "any"
+          confidence: 0.7
+
+      confidence_modifiers:
+        has_serverless_config: +0.2
+        has_functions_directory: +0.2
+
+    recommended_config:
+      agents:
+        coder: true
+        tester: true
+        research: true
+        master_devops: true
+
+  # ==========================================================================
+  # FULL-STACK PROJECTS
+  # ==========================================================================
+
+  t3_stack:
+    name: "T3 Stack"
+    category: "fullstack"
+    description: "T3 Stack (Next.js + tRPC + Prisma + Tailwind)"
+
+    detection_rules:
+      required_signals:
+        - type: "package"
+          name: "next"
+          confidence: 0.8
+
+        - type: "package"
+          names: ["@trpc/server", "@trpc/client"]
+          match: "all"
+          confidence: 0.9
+
+      strong_signals:
+        - type: "package"
+          names: ["@prisma/client", "tailwindcss"]
+          confidence: 0.7
+
+        - type: "file"
+          patterns: ["prisma/schema.prisma"]
+          confidence: 0.6
+
+      confidence_modifiers:
+        has_trpc: +0.3
+        has_prisma: +0.2
+        has_tailwind: +0.1
+
+    recommended_config:
+      agents:
+        coder: true
+        tester: true
+        research: true
+        master_fullstack: true
+        master_data: true
+
+  # --------------------------------------------------------------------------
+
+  remix_fullstack:
+    name: "Remix Full-Stack"
+    category: "fullstack"
+    description: "Remix full-stack application"
+
+    detection_rules:
+      required_signals:
+        - type: "package"
+          name: "@remix-run/node"
+          confidence: 0.9
+
+      strong_signals:
+        - type: "file"
+          patterns: ["remix.config.js", "remix.config.ts"]
+          confidence: 0.8
+
+        - type: "directory"
+          patterns: ["app/routes/"]
+          confidence: 0.7
+
+      confidence_modifiers:
+        has_remix_config: +0.2
+
+    recommended_config:
+      agents:
+        coder: true
+        tester: true
+        research: true
+        master_fullstack: true
+
+  # --------------------------------------------------------------------------
+
+  django_fullstack:
+    name: "Django Full-Stack"
+    category: "fullstack"
+    description: "Django with templates (full-stack Python)"
+
+    detection_rules:
+      required_signals:
+        - type: "file"
+          patterns: ["manage.py"]
+          confidence: 0.9
+
+        - type: "package_pip"
+          name: "django"
+          confidence: 0.9
+
+      strong_signals:
+        - type: "directory"
+          patterns: ["templates/", "static/"]
+          match: "any"
+          confidence: 0.7
+
+        - type: "file"
+          patterns: ["settings.py", "urls.py"]
+          confidence: 0.6
+
+      confidence_modifiers:
+        has_templates: +0.2
+        has_static: +0.1
+
+    recommended_config:
+      agents:
+        coder: true
+        tester: true
+        research: true
+        master_fullstack: true
+        master_data: true
+
+  # ==========================================================================
+  # SPECIALIZED PROJECTS
+  # ==========================================================================
+
+  monorepo:
+    name: "Monorepo"
+    category: "specialized"
+    description: "Multi-package monorepo (Turborepo, Nx, Lerna)"
+
+    detection_rules:
+      required_signals:
+        - type: "file"
+          patterns: ["turbo.json", "nx.json", "lerna.json", "pnpm-workspace.yaml"]
+          match: "any"
+          confidence: 0.9
+
+      strong_signals:
+        - type: "directory"
+          patterns: ["packages/", "apps/"]
+          match: "any"
+          confidence: 0.7
+
+        - type: "package"
+          names: ["turbo", "@nrwl/workspace", "lerna"]
+          match: "any"
+          confidence: 0.8
+
+      confidence_modifiers:
+        has_workspace_config: +0.3
+        has_multiple_packages: +0.2
+
+    recommended_config:
+      agents:
+        coder: true
+        tester: true
+        research: true
+        master_fullstack: true
+        integrator: true
+
+  # --------------------------------------------------------------------------
+
+  cli_tool:
+    name: "CLI Tool"
+    category: "specialized"
+    description: "Command-line tool/utility"
+
+    detection_rules:
+      required_signals:
+        - type: "package"
+          bin_field: true              # Has bin field in package.json
+          confidence: 0.9
+
+      strong_signals:
+        - type: "package"
+          names: ["commander", "yargs", "inquirer", "chalk", "ora"]
+          match: "any"
+          confidence: 0.7
+
+        - type: "file"
+          patterns: ["cli.js", "cli.ts", "bin/*"]
+          confidence: 0.6
+
+      exclusions:
+        - has_frontend: true
+        - has_api_routes: true
+
+      confidence_modifiers:
+        has_bin_directory: +0.2
+        has_cli_packages: +0.2
+
+    recommended_config:
+      agents:
+        coder: true
+        tester: true
+        research: true
+        master_docs: true
+
+  # --------------------------------------------------------------------------
+
+  npm_package:
+    name: "NPM Package"
+    category: "specialized"
+    description: "NPM library/package for distribution"
+
+    detection_rules:
+      required_signals:
+        - type: "file"
+          patterns: ["package.json"]
+          confidence: 0.6
+
+      strong_signals:
+        - type: "package"
+          has_main_field: true
+          has_exports_field: true
+          confidence: 0.7
+
+        - type: "directory"
+          patterns: ["dist/", "lib/", "build/"]
+          match: "any"
+          confidence: 0.5
+
+        - type: "file"
+          patterns: ["tsup.config.ts", "rollup.config.js", "webpack.config.js"]
+          match: "any"
+          confidence: 0.6
+
+      exclusions:
+        - has_app_directory: true
+        - has_pages_directory: true
+
+      confidence_modifiers:
+        has_build_config: +0.2
+        has_types: +0.1
+
+    recommended_config:
+      agents:
+        coder: true
+        tester: true
+        research: true
+        master_docs: true
+
+  # --------------------------------------------------------------------------
+
+  chrome_extension:
+    name: "Chrome Extension"
+    category: "specialized"
+    description: "Browser extension (Chrome, Firefox, etc.)"
+
+    detection_rules:
+      required_signals:
+        - type: "file"
+          patterns: ["manifest.json"]
+          confidence: 0.9
+
+      strong_signals:
+        - type: "manifest"
+          has_field: "manifest_version"
+          confidence: 0.8
+
+        - type: "directory"
+          patterns: ["popup/", "background/", "content/"]
+          match: "any"
+          confidence: 0.6
+
+      confidence_modifiers:
+        has_manifest_v3: +0.2
+        has_popup: +0.1
+        has_background_script: +0.1
+
+    recommended_config:
+      agents:
+        coder: true
+        tester: true
+        research: true
+        master_docs: true
+
+  # --------------------------------------------------------------------------
+
+  wordpress_plugin:
+    name: "WordPress Plugin"
+    category: "specialized"
+    description: "WordPress plugin development"
+
+    detection_rules:
+      required_signals:
+        - type: "file"
+          patterns: ["*.php"]
+          has_wordpress_headers: true  # Plugin Name, Plugin URI, etc.
+          confidence: 0.9
+
+      strong_signals:
+        - type: "file"
+          patterns: ["readme.txt"]
+          is_wordpress_readme: true
+          confidence: 0.7
+
+        - type: "directory"
+          patterns: ["includes/", "admin/", "public/"]
+          confidence: 0.5
+
+      confidence_modifiers:
+        has_wordpress_hooks: +0.2
+
+    recommended_config:
+      agents:
+        coder: true
+        tester: true
+        research: true
+        master_docs: true
+
+# ============================================================================
+# DETECTION HELPERS
+# ============================================================================
+
+detection_helpers:
+  # File patterns to scan
+  scan_patterns:
+    configs: ["*.config.{js,ts,mjs,cjs}", "tsconfig.json", "vite.config.*"]
+    manifests: ["package.json", "requirements.txt", "Gemfile", "go.mod", "Cargo.toml"]
+    entry_points: ["index.*", "main.*", "app.*", "server.*"]
+
+  # Directory indicators
+  common_directories:
+    source: ["src/", "app/", "lib/"]
+    tests: ["tests/", "test/", "__tests__/", "spec/"]
+    config: ["config/", ".config/"]
+    build: ["dist/", "build/", "out/", ".next/"]
+
+  # Package manager detection
+  package_managers:
+    npm:
+      lockfile: "package-lock.json"
+      manifest: "package.json"
+
+    pnpm:
+      lockfile: "pnpm-lock.yaml"
+      manifest: "package.json"
+      workspace: "pnpm-workspace.yaml"
+
+    yarn:
+      lockfile: "yarn.lock"
+      manifest: "package.json"
+
+    pip:
+      manifest: ["requirements.txt", "pyproject.toml", "Pipfile"]
+      lockfile: "Pipfile.lock"
+
+    bundler:
+      manifest: "Gemfile"
+      lockfile: "Gemfile.lock"
+
+# ============================================================================
+# CONFIDENCE SCORING
+# ============================================================================
+
+confidence_scoring:
+  # How to calculate final confidence score
+  algorithm: "weighted_signals"
+
+  # Scoring rules
+  rules:
+    required_signals_met: "minimum 0.7 base confidence"
+    strong_signals_bonus: "+0.1 per strong signal (max +0.2)"
+    moderate_signals_bonus: "+0.05 per moderate signal (max +0.1)"
+    modifiers_applied: "apply all confidence_modifiers"
+    exclusions_penalty: "-0.5 if any exclusion met"
+
+  # Minimum requirements
+  minimum_confidence: 0.5              # Below this, ask user to choose manually
+  auto_select_threshold: 0.8           # Above this, auto-select without asking
+
+# ============================================================================
+# FALLBACK STRATEGIES
+# ============================================================================
+
+fallback_strategies:
+  # If no type detected with confidence > minimum
+  no_detection:
+    action: "prompt_user"
+    show_all_types: true
+    suggest_manual_config: true
+
+  # If multiple types have similar confidence
+  ambiguous_detection:
+    action: "show_alternatives"
+    max_alternatives: 3
+    allow_custom: true
+
+  # If detection fails
+  detection_error:
+    action: "default_config"
+    default_type: "standard"           # Generic project type

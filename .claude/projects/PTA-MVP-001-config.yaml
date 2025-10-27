@@ -1,0 +1,762 @@
+# Prophetic Transcript Analyzer (PTA) - MVP Configuration
+# Project ID: PTA-MVP-001
+# Generated: 2025-10-28
+# Timeline: 1-week MVP
+# Architecture: Hierarchical Supervisor Assembly Line
+
+# ============================================================================
+# PROJECT IDENTITY
+# ============================================================================
+project_identity:
+  project_id: "PTA-MVP-001"
+  name: "Prophetic Transcript Analyzer"
+  version: "0.1.0-MVP"
+  description: "Intelligent transcript analysis with future-proof spatial data integration"
+
+  primary_goal: |
+    Build MVP for analyzing video transcripts with strategic focus filtering,
+    competitive differentiation analysis, and reserved schema fields for
+    future spatial data layer integration (emergent market trends).
+
+  timeline: "1 week"
+  delivery_date: "2025-11-04"
+
+  primary_goals:
+    - build_new_feature                  # Core transcript analysis
+    - add_test_coverage                  # Schema validation
+    - future_proof_architecture          # Spatial data contract
+    - zero_cost_integration              # No paid APIs for MVP
+
+# ============================================================================
+# PROJECT TYPE & STACK
+# ============================================================================
+project_type:
+  detected:
+    type: "python_api"                   # NLP-heavy backend processing
+    confidence: 0.95
+
+  stack_preferences:
+    backend: "Python FastAPI"            # Fast async API
+    nlp: "spaCy or Transformers"         # Segmentation & summarization
+    database: "SQLite for MVP"           # Zero-cost, file-based
+    database_future: "PostgreSQL+PostGIS" # Spatial data ready
+    testing: "Pytest"
+    deployment: "Vercel or Render"       # Free tier
+
+# ============================================================================
+# ARCHITECTURE PATTERN
+# ============================================================================
+architecture:
+  pattern: "Hierarchical_Supervisor_AssemblyLine"
+
+  description: |
+    Queen Agent orchestrates workflow through assembly line of specialist agents.
+    Each agent hands off to next in sequence. Queen monitors progress and handles errors.
+
+  flow_pattern: "Sequential with Gates"
+
+  supervision_model:
+    supervisor: "Queen_Agent"
+    supervisor_role: "Workflow orchestration, error recovery, progress monitoring"
+    workers: ["Prophecy_Engine_Swarm", "Ingestion_Agent", "Segmenter_Agent", "Formatter_Agent", "Test_Agent"]
+
+# ============================================================================
+# CRITICAL CONSTRAINT: PROPHECY ENGINE MUST RUN FIRST
+# ============================================================================
+prophecy_engine_mandate:
+  enabled: true
+  priority: "CRITICAL"
+
+  rule: |
+    The Prophecy Engine Swarm MUST run as the FIRST task in every workflow
+    to establish the Prophetic Data Contract (reserved schema fields) before
+    any code generation, data ingestion, or processing begins.
+
+  contract_fields:
+    - "spatial_tags: Array[String]"      # Reserved for future geospatial tags
+    - "geospatial_tag: String"           # Reserved for future location data
+
+  mvp_values:
+    spatial_tags: "[]"                   # Empty array in MVP
+    geospatial_tag: "''"                 # Empty string in MVP
+
+  enforcement: "BLOCKING"                # Block workflow if not run first
+
+# ============================================================================
+# AGENT CONFIGURATION - CUSTOM PTA AGENTS
+# ============================================================================
+agents:
+
+  # Queen Agent - Supervisor
+  queen_agent:
+    enabled: true
+    role: "Workflow Orchestrator & Error Recovery"
+    definition: ".claude/agents/pta/queen-agent.md"
+
+    responsibilities:
+      - "Orchestrate entire PTA workflow"
+      - "Ensure Prophecy Engine runs first"
+      - "Monitor progress through assembly line"
+      - "Handle errors and retry logic"
+      - "Coordinate handoffs between specialist agents"
+      - "Report final status to user"
+
+    decision_authority: "HIGH"           # Can skip agents if data unavailable
+    error_handling: "Retry with degradation" # Can proceed with partial results
+
+  # Prophecy Engine Swarm - MUST RUN FIRST
+  prophecy_engine_swarm:
+    enabled: true
+    role: "Future Trend Analysis & Strategic Feature Injection"
+    definition: ".claude/agents/pta/prophecy-engine.md"
+    priority: "CRITICAL"
+    execution_order: 1                   # ALWAYS FIRST
+
+    responsibilities:
+      - "Analyze emergent market trends (Spatial Data Layer focus)"
+      - "Define Prophetic Data Contract (reserved schema fields)"
+      - "Set strategic direction for feature development"
+      - "Inject future-proof architecture decisions"
+      - "Document reserved fields and their future purpose"
+
+    outputs:
+      - "Prophetic Data Contract specification"
+      - "Reserved schema fields documentation"
+      - "Future integration roadmap"
+      - "Strategic recommendations"
+
+    gate: "BLOCKING"                     # Nothing proceeds until complete
+
+  # Ingestion Agent
+  ingestion_agent:
+    enabled: true
+    role: "Data Ingestion & Database Schema Initialization"
+    definition: ".claude/agents/pta/ingestion-agent.md"
+    execution_order: 2
+
+    responsibilities:
+      - "Fetch transcript from YouTube URL (via youtube-transcript-api)"
+      - "Initialize database with schema (including Prophecy Contract fields)"
+      - "Parse and validate transcript data"
+      - "Store raw transcript with metadata"
+      - "Handle ingestion errors gracefully"
+
+    dependencies:
+      - "youtube-transcript-api (Python)"
+      - "Database connection (SQLite MVP)"
+
+    handoff_to: "segmenter_agent"
+
+  # Segmenter Agent
+  segmenter_agent:
+    enabled: true
+    role: "NLP Segmentation & Contextual Summarization"
+    definition: ".claude/agents/pta/segmenter-agent.md"
+    execution_order: 3
+
+    responsibilities:
+      - "Segment transcript into logical chunks (scene changes, topic shifts)"
+      - "Generate focused summaries based on focus_filter (TECHNICAL/MARKETING/GENERAL)"
+      - "Extract timestamps for each segment"
+      - "Apply custom constraints/exclusions"
+      - "Optimize for context preservation"
+
+    nlp_approach:
+      - "Sentence tokenization"
+      - "Topic modeling (lightweight)"
+      - "Summarization (extractive for MVP, abstractive if time permits)"
+
+    handoff_to: "formatter_agent"
+
+  # Formatter Agent
+  formatter_agent:
+    enabled: true
+    role: "JSON Schema Enforcement & Final Artifact Delivery"
+    definition: ".claude/agents/pta/formatter-agent.md"
+    execution_order: 4
+
+    responsibilities:
+      - "Format analysis results into ANALYSIS_REPORT_SCHEMA"
+      - "Enforce schema compliance (all required fields)"
+      - "Include Prophecy Contract fields (spatial_tags: [], geospatial_tag: '')"
+      - "Generate Markdown report if requested"
+      - "Calculate differentiation_score if competitor URL provided"
+      - "Deliver final artifact to user"
+
+    schema_enforcement: "STRICT"
+    validation_required: true
+
+    handoff_to: "test_agent"
+
+  # Test Agent
+  test_agent:
+    enabled: true
+    role: "Schema Validation & Unit Test Coverage"
+    definition: ".claude/agents/pta/test-agent.md"
+    execution_order: 5
+
+    responsibilities:
+      - "Validate output against ANALYSIS_REPORT_SCHEMA"
+      - "Ensure Prophecy Contract fields present (even if empty)"
+      - "Run unit tests for each agent's core functions"
+      - "Integration test: full pipeline with sample transcript"
+      - "Report test coverage and validation results"
+
+    test_coverage_target: 80             # 80% coverage for MVP
+    blocking: true                       # Must pass before delivery
+
+    handoff_to: "queen_agent"            # Return to Queen for final report
+
+  # Standard Orchestrator Agents (supporting roles)
+  research:
+    enabled: true
+    definition: ".claude/agents/research.md"
+    use_case: "Research NLP libraries, YouTube API, spatial data standards"
+
+  coder:
+    enabled: true
+    definition: ".claude/agents/coder.md"
+    use_case: "Implement agent logic, API endpoints, schema definitions"
+
+  integrator:
+    enabled: true
+    definition: ".claude/agents/integrator.md"
+    use_case: "Wire agents together, ensure assembly line flows correctly"
+
+# ============================================================================
+# WORKFLOW DEFINITION - PTA ASSEMBLY LINE
+# ============================================================================
+workflows:
+
+  pta_mvp_pipeline:
+    name: "PTA MVP Assembly Line"
+    description: "End-to-end transcript analysis with Prophecy Engine-first architecture"
+
+    steps:
+      - step: 1
+        agent: "prophecy_engine_swarm"
+        name: "Future-Proof Architecture Definition"
+        blocking: true                   # MUST complete first
+        outputs:
+          - "Prophetic Data Contract"
+          - "Reserved schema fields"
+        next: "ingestion_agent"
+
+      - step: 2
+        agent: "ingestion_agent"
+        name: "Transcript Ingestion & Database Init"
+        blocking: true
+        inputs:
+          - "video_url (from user)"
+          - "Prophetic Data Contract (from Prophecy Engine)"
+        outputs:
+          - "Raw transcript"
+          - "Database initialized with schema"
+        next: "segmenter_agent"
+
+      - step: 3
+        agent: "segmenter_agent"
+        name: "Segmentation & Contextual Summarization"
+        blocking: true
+        inputs:
+          - "Raw transcript (from Ingestion)"
+          - "focus_filter (from user)"
+          - "custom_constraints (from user)"
+        outputs:
+          - "Segmented transcript with summaries"
+          - "Timestamps per segment"
+        next: "formatter_agent"
+
+      - step: 4
+        agent: "formatter_agent"
+        name: "Schema Enforcement & Report Generation"
+        blocking: true
+        inputs:
+          - "Segmented data (from Segmenter)"
+          - "comparison_target (optional, from user)"
+        outputs:
+          - "ANALYSIS_REPORT_SCHEMA compliant JSON"
+          - "Markdown report (if requested)"
+        next: "test_agent"
+
+      - step: 5
+        agent: "test_agent"
+        name: "Validation & Quality Assurance"
+        blocking: true
+        inputs:
+          - "Final report (from Formatter)"
+        outputs:
+          - "Validation results"
+          - "Test coverage report"
+        next: "queen_agent"
+
+      - step: 6
+        agent: "queen_agent"
+        name: "Final Review & Delivery"
+        blocking: false
+        inputs:
+          - "All agent outputs"
+          - "Validation results (from Test)"
+        outputs:
+          - "Final report to user"
+          - "Workflow completion status"
+
+# ============================================================================
+# INPUT SCHEMA DEFINITION
+# ============================================================================
+input_schema:
+  schema_name: "PTA_INPUT_SCHEMA"
+  version: "1.0.0"
+
+  parameters:
+    - name: "video_url"
+      type: "String"
+      mandatory: true
+      label: "YouTube Link"
+      validation: "Must be valid YouTube URL (youtube.com or youtu.be)"
+      example: "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+
+    - name: "project_name"
+      type: "String"
+      mandatory: true
+      label: "Project Title"
+      validation: "Non-empty string, max 100 chars"
+      example: "Q4 Product Launch Video"
+
+    - name: "output_format"
+      type: "Enum"
+      mandatory: true
+      options: ["JSON-Structured", "Markdown-Report"]
+      default: "JSON-Structured"
+      label: "Output Format"
+
+    - name: "focus_filter"
+      type: "Enum"
+      mandatory: true
+      options: ["TECHNICAL", "MARKETING", "GENERAL"]
+      default: "GENERAL"
+      label: "Strategic Focus"
+      description: "Filter summaries for technical details, marketing points, or general content"
+
+    - name: "comparison_target"
+      type: "String"
+      mandatory: false
+      label: "Competitor URL (Optional)"
+      description: "URL to competitor video for differentiation analysis"
+      example: "https://www.youtube.com/watch?v=competitor123"
+
+    - name: "custom_constraints"
+      type: "Text"
+      mandatory: false
+      label: "Exclusions/Notes"
+      description: "Free-form text for custom constraints, topics to exclude, etc."
+      max_length: 500
+
+    - name: "enable_prophecy"
+      type: "Boolean"
+      mandatory: true
+      default: true
+      label: "Future-Proof Analysis"
+      description: "Enable Prophecy Engine for future trend analysis (MUST be true for MVP)"
+
+# ============================================================================
+# OUTPUT SCHEMA DEFINITION (PROPHETIC DATA CONTRACT)
+# ============================================================================
+output_schema:
+  schema_name: "ANALYSIS_REPORT_SCHEMA"
+  version: "1.0.0"
+
+  required_fields:
+    - name: "project_name"
+      type: "String"
+      source: "User input"
+
+    - name: "analysis_timestamp"
+      type: "String"
+      format: "ISO-8601"
+      source: "Generated at analysis time"
+      example: "2025-10-28T10:30:00Z"
+
+    - name: "prophecy_enabled"
+      type: "Boolean"
+      source: "User input (enable_prophecy)"
+      mvp_value: true
+
+    - name: "differentiation_score"
+      type: "Number"
+      nullable: true
+      source: "Calculated if comparison_target provided"
+      range: "0.0 to 1.0"
+      mvp_value: "null (if no comparison)"
+
+    - name: "segments"
+      type: "Array"
+      description: "Array of analyzed transcript segments"
+      items:
+        type: "Object"
+        required_fields:
+          - name: "time_start_sec"
+            type: "Integer"
+            description: "Segment start time in seconds"
+
+          - name: "segment_title"
+            type: "String"
+            description: "Auto-generated title for segment"
+
+          - name: "summary_focused"
+            type: "String"
+            description: "Summary filtered by focus_filter (TECHNICAL/MARKETING/GENERAL)"
+
+          # PROPHETIC DATA CONTRACT FIELDS (RESERVED FOR FUTURE)
+          - name: "spatial_tags"
+            type: "Array[String]"
+            prophecy_contract: true
+            mvp_value: "[]"
+            future_purpose: "Array of geospatial tags for spatial data layer integration"
+            future_examples: ["urban", "coastal", "industrial_zone"]
+            description: "MUST be coded into schema. MVP value is empty array []"
+
+          - name: "geospatial_tag"
+            type: "String"
+            prophecy_contract: true
+            mvp_value: "''"
+            future_purpose: "Primary geographic identifier for spatial indexing"
+            future_examples: ["San Francisco, CA", "Tokyo Metro Area"]
+            description: "MUST be coded into schema. MVP value is empty string ''"
+
+# ============================================================================
+# MoSCoW PRIORITIZATION (1-WEEK MVP)
+# ============================================================================
+moscow_prioritization:
+
+  MUST_HAVE:
+    priority: "P0"
+    timeline: "Week 1 (MVP)"
+    items:
+      - name: "Transcript Ingestion & Segmentation"
+        description: "Core functionality to fetch and segment YouTube transcripts"
+        acceptance_criteria:
+          - "Can fetch transcript via youtube-transcript-api"
+          - "Segments transcript into logical chunks"
+          - "Generates focused summaries based on filter"
+        agents: ["ingestion_agent", "segmenter_agent"]
+
+      - name: "Spatial Data Indexing (Schema MUST be built)"
+        description: "Database schema includes Prophecy Contract fields (even if empty)"
+        acceptance_criteria:
+          - "Database schema includes spatial_tags field (Array[String], default [])"
+          - "Database schema includes geospatial_tag field (String, default '')"
+          - "Schema documented with future purpose"
+        agents: ["prophecy_engine_swarm", "ingestion_agent"]
+        blocking: true
+
+      - name: "Output Schema Compliance"
+        description: "All outputs conform to ANALYSIS_REPORT_SCHEMA"
+        acceptance_criteria:
+          - "JSON output validates against schema"
+          - "All required fields present"
+          - "Prophecy Contract fields included (even if empty)"
+        agents: ["formatter_agent", "test_agent"]
+
+  SHOULD_HAVE:
+    priority: "P1"
+    timeline: "Week 1 if time permits"
+    items:
+      - name: "User-Defined Focus Filtering"
+        description: "TECHNICAL/MARKETING/GENERAL filtering for summaries"
+        acceptance_criteria:
+          - "Summaries adapt to selected focus"
+          - "Technical: Include jargon, specs, implementation details"
+          - "Marketing: Include benefits, value props, audience targeting"
+          - "General: Balanced overview"
+        agents: ["segmenter_agent"]
+
+      - name: "Competitive Context Comparator"
+        description: "If comparison_target provided, calculate differentiation_score"
+        acceptance_criteria:
+          - "Fetches competitor transcript"
+          - "Compares key themes/topics"
+          - "Calculates differentiation score (0.0-1.0)"
+        agents: ["segmenter_agent", "formatter_agent"]
+        conditional: "Only if comparison_target provided"
+
+  COULD_HAVE:
+    priority: "P2"
+    timeline: "Post-MVP (future sprints)"
+    items:
+      - name: "One-Click Content Repurposing"
+        description: "Generate social media posts, blog outlines from transcript"
+        deferred_reason: "Not critical for MVP validation"
+
+      - name: "Markdown Report Generation"
+        description: "Human-readable Markdown report in addition to JSON"
+        deferred_reason: "JSON sufficient for MVP testing"
+
+  WONT_HAVE:
+    priority: "P3"
+    timeline: "Explicitly out of scope for MVP"
+    items:
+      - name: "User Account Creation/Login"
+        rationale: "Single-user MVP, no auth needed initially"
+        future_consideration: true
+
+      - name: "Advanced Multi-Video RAG/Search"
+        rationale: "Complex feature, not needed for MVP validation"
+        future_consideration: true
+
+      - name: "Real-time Spatial Data Integration"
+        rationale: "Schema is reserved, but actual integration is post-MVP"
+        future_consideration: true
+
+# ============================================================================
+# DATABASE SCHEMA (WITH PROPHETIC DATA CONTRACT)
+# ============================================================================
+database_schema:
+  engine: "SQLite"                       # MVP: file-based, zero-cost
+  future_engine: "PostgreSQL + PostGIS"  # Production: spatial data support
+
+  tables:
+
+    # Transcripts Table
+    transcripts:
+      description: "Raw transcript storage"
+      fields:
+        - name: "id"
+          type: "INTEGER PRIMARY KEY AUTOINCREMENT"
+        - name: "project_name"
+          type: "TEXT NOT NULL"
+        - name: "video_url"
+          type: "TEXT NOT NULL"
+        - name: "transcript_text"
+          type: "TEXT NOT NULL"
+        - name: "focus_filter"
+          type: "TEXT"
+          enum: ["TECHNICAL", "MARKETING", "GENERAL"]
+        - name: "comparison_target"
+          type: "TEXT NULL"
+        - name: "custom_constraints"
+          type: "TEXT NULL"
+        - name: "created_at"
+          type: "TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
+
+    # Segments Table (INCLUDES PROPHETIC DATA CONTRACT)
+    segments:
+      description: "Segmented transcript analysis with reserved spatial fields"
+      fields:
+        - name: "id"
+          type: "INTEGER PRIMARY KEY AUTOINCREMENT"
+        - name: "transcript_id"
+          type: "INTEGER"
+          foreign_key: "transcripts.id"
+        - name: "time_start_sec"
+          type: "INTEGER NOT NULL"
+        - name: "segment_title"
+          type: "TEXT NOT NULL"
+        - name: "summary_focused"
+          type: "TEXT NOT NULL"
+
+        # PROPHETIC DATA CONTRACT FIELDS (RESERVED)
+        - name: "spatial_tags"
+          type: "TEXT"                   # JSON array as TEXT in SQLite
+          default: "'[]'"                # Empty JSON array
+          prophecy_contract: true
+          description: "Reserved for future geospatial tags (Spatial Data Layer)"
+          future_type: "ARRAY[TEXT]"     # PostgreSQL array in future
+
+        - name: "geospatial_tag"
+          type: "TEXT"
+          default: "''"                  # Empty string
+          prophecy_contract: true
+          description: "Reserved for primary geographic identifier"
+          future_type: "TEXT"
+          future_index: "GiST spatial index in PostGIS"
+
+        - name: "created_at"
+          type: "TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
+
+    # Analysis Results Table
+    analysis_results:
+      description: "Final analysis reports"
+      fields:
+        - name: "id"
+          type: "INTEGER PRIMARY KEY AUTOINCREMENT"
+        - name: "transcript_id"
+          type: "INTEGER"
+          foreign_key: "transcripts.id"
+        - name: "analysis_timestamp"
+          type: "TIMESTAMP"
+        - name: "prophecy_enabled"
+          type: "BOOLEAN NOT NULL"
+        - name: "differentiation_score"
+          type: "REAL NULL"             # 0.0 to 1.0, nullable
+        - name: "output_format"
+          type: "TEXT"
+          enum: ["JSON-Structured", "Markdown-Report"]
+        - name: "result_json"
+          type: "TEXT NOT NULL"          # Full JSON output
+        - name: "created_at"
+          type: "TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
+
+# ============================================================================
+# SAFETY & GUARDRAILS
+# ============================================================================
+guardrails:
+
+  write_scope:
+    - "src/**"
+    - "app/**"
+    - "pta/**"                           # PTA-specific code
+    - "agents/**"                        # Custom agent definitions
+    - "tests/**"
+    - "docs/**"
+    - "schema/**"                        # Schema definitions
+    - "database/**"                      # Database migrations
+
+  protected_files:
+    - ".env*"
+    - "database/production.db"           # Protect production DB
+    - "*.key"
+    - "credentials.*"
+
+  require_tests_to_pass: true
+
+  prophecy_engine_enforcement:
+    enabled: true
+    rule: "Prophecy Engine MUST run before any code generation"
+    blocking: true
+
+# ============================================================================
+# TEAM CONTEXT
+# ============================================================================
+team_context:
+  size: "solo"                           # Single developer MVP
+  experience_level: "senior"             # Capable of full-stack
+  autonomy: "trusted"                    # Fast iteration for MVP
+  timeline_pressure: "high"              # 1-week deadline
+
+# ============================================================================
+# TESTING STRATEGY
+# ============================================================================
+testing:
+  strategy: "Test-Driven for Schema Compliance"
+
+  test_types:
+    unit_tests:
+      enabled: true
+      coverage_target: 80
+      focus_areas:
+        - "Schema validation functions"
+        - "Ingestion agent transcript parsing"
+        - "Segmenter agent NLP functions"
+        - "Formatter agent JSON generation"
+
+    integration_tests:
+      enabled: true
+      test_cases:
+        - name: "Full pipeline with sample transcript"
+          input: "Sample YouTube URL"
+          expected_output: "Valid ANALYSIS_REPORT_SCHEMA JSON"
+
+        - name: "Prophecy Contract field presence"
+          validation: "Ensure spatial_tags and geospatial_tag in output"
+
+        - name: "Focus filter application"
+          input: "focus_filter: TECHNICAL"
+          validation: "Summaries contain technical details"
+
+    schema_validation:
+      enabled: true
+      blocking: true
+      validates:
+        - "Input schema (PTA_INPUT_SCHEMA)"
+        - "Output schema (ANALYSIS_REPORT_SCHEMA)"
+        - "Database schema (with Prophecy Contract fields)"
+
+# ============================================================================
+# DEPLOYMENT
+# ============================================================================
+deployment:
+  mvp_platform: "Local + Vercel/Render free tier"
+
+  mvp_requirements:
+    - "FastAPI application"
+    - "SQLite database (file-based)"
+    - "No authentication (single-user MVP)"
+    - "Environment variables for API keys (if needed)"
+
+  future_platform: "Cloud with PostgreSQL + PostGIS"
+
+  cost_constraint: "ZERO COST FOR MVP"
+
+# ============================================================================
+# OBSERVABILITY
+# ============================================================================
+observability:
+  logging:
+    enabled: true
+    level: "info"
+    log_prophecy_execution: true         # Log Prophecy Engine runs
+    log_assembly_line_progress: true     # Log each agent handoff
+
+  metrics:
+    track_agent_execution_time: true
+    track_handoff_success_rate: true
+    track_schema_validation_results: true
+
+# ============================================================================
+# NEXT STEPS (IMMEDIATE ACTIONS)
+# ============================================================================
+next_steps:
+  immediate:
+    - "Queen Agent reviews this config and confirms workflow"
+    - "Prophecy Engine Swarm defines Prophetic Data Contract"
+    - "Research Agent finds best NLP libraries for segmentation"
+    - "Coder Agent implements database schema with reserved fields"
+    - "Test Agent creates schema validation tests"
+
+  phase_1_day_1_2:
+    - "Ingestion Agent: Implement YouTube transcript fetching"
+    - "Database: Initialize SQLite with full schema (including Prophecy fields)"
+    - "Basic pipeline: Ingest → Store → Validate schema"
+
+  phase_2_day_3_4:
+    - "Segmenter Agent: Implement NLP segmentation"
+    - "Segmenter Agent: Add focus filtering (TECHNICAL/MARKETING/GENERAL)"
+    - "Integration test: Full pipeline with sample video"
+
+  phase_3_day_5_6:
+    - "Formatter Agent: Implement ANALYSIS_REPORT_SCHEMA output"
+    - "Competitive comparison: Calculate differentiation_score"
+    - "Test Agent: Full validation suite"
+
+  phase_4_day_7:
+    - "Polish UI (if time permits)"
+    - "Documentation"
+    - "Demo preparation"
+    - "Deploy to free tier hosting"
+
+# ============================================================================
+# SUCCESS CRITERIA
+# ============================================================================
+success_criteria:
+  mvp_complete_when:
+    - "Can analyze any YouTube video with transcript"
+    - "Output conforms to ANALYSIS_REPORT_SCHEMA (100% validation)"
+    - "Prophecy Contract fields present in schema and output"
+    - "Test coverage >= 80%"
+    - "End-to-end integration test passes"
+    - "Deployed and accessible (even if local)"
+
+  mvp_validation_checklist:
+    - [ ] Prophecy Engine ran first and defined contract
+    - [ ] Database schema includes spatial_tags (Array, default [])
+    - [ ] Database schema includes geospatial_tag (String, default '')
+    - [ ] Can fetch YouTube transcript via youtube-transcript-api
+    - [ ] Segments transcript into logical chunks with timestamps
+    - [ ] Generates focused summaries based on filter
+    - [ ] Output JSON validates against ANALYSIS_REPORT_SCHEMA
+    - [ ] All required fields present in output
+    - [ ] Prophecy Contract fields in output (even if empty)
+    - [ ] Unit tests pass (80% coverage)
+    - [ ] Integration test passes (full pipeline)
+    - [ ] Zero-cost deployment achieved

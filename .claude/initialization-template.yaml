@@ -1,0 +1,509 @@
+# Claude Orchestrator - Project Initialization Template
+# This file guides the setup of a new project or integration with existing projects
+
+# ============================================================================
+# SECTION 1: PROJECT IDENTITY
+# ============================================================================
+project_identity:
+  # Basic Information
+  name: ""                              # Project name (required)
+  version: "1.0.0"                      # Current version
+  description: ""                       # Brief project description (1-2 sentences)
+  repository: ""                        # Git repository URL (optional)
+
+  # Primary Objectives (select all that apply)
+  primary_goals:
+    - build_new_feature                 # □ Building new features
+    - fix_bugs                          # □ Fixing bugs and issues
+    - refactor_code                     # □ Refactoring/improving code
+    - add_tests                         # □ Adding test coverage
+    - improve_performance               # □ Performance optimization
+    - add_documentation                 # □ Documentation
+    - deploy_to_production              # □ Deployment and DevOps
+    - other: ""                         # □ Other (specify)
+
+# ============================================================================
+# SECTION 2: PROJECT TYPE & TECHNOLOGY STACK
+# ============================================================================
+project_type:
+  # Auto-detected (will be filled by detection system)
+  detected:
+    type: ""                            # e.g., nextjs_fullstack, python_api
+    confidence: 0.0                     # 0.0 - 1.0
+    timestamp: ""                       # ISO-8601
+
+  # Manual override (if auto-detection is wrong)
+  manual_override:
+    enabled: false                      # Set to true to override
+    type: ""                            # Select from list below
+    reason: ""                          # Why override? (optional)
+
+# Available project types:
+# Frontend: nextjs_app, react_spa, vue_app, svelte_app, static_site
+# Backend: node_api, python_api, graphql_api, serverless
+# Full-Stack: nextjs_fullstack, t3_stack, remix_fullstack, rails_app, django_fullstack, laravel_app
+# Specialized: mobile_app, electron_app, chrome_extension, cli_tool, monorepo, wordpress_plugin, npm_package
+
+technology_stack:
+  # Auto-detected stack details
+  detected:
+    languages: []                       # e.g., ["TypeScript", "JavaScript"]
+    frameworks: []                      # e.g., ["Next.js 14", "React 18"]
+    databases: []                       # e.g., ["PostgreSQL", "Redis"]
+    testing_frameworks: []              # e.g., ["Playwright", "Vitest"]
+    package_manager: ""                 # npm, pnpm, yarn, bun
+    runtime: ""                         # Node.js 18, Python 3.11, etc.
+
+  # User confirmation
+  confirmed: false                      # Review and set to true
+
+  # Additional tools not auto-detected
+  custom_additions:
+    - tool: ""
+      purpose: ""
+    # Add more as needed
+
+# ============================================================================
+# SECTION 3: TEAM & WORKFLOW CONTEXT
+# ============================================================================
+team_context:
+  # Team Size
+  size: "solo"                          # solo | small | medium | large
+  # solo: 1 developer
+  # small: 2-5 developers
+  # medium: 6-20 developers
+  # large: 20+ developers
+
+  # Experience Level
+  experience_level: "mixed"             # junior | mid | senior | mixed
+
+  # Development Workflow
+  workflow: "feature_branch"            # gitflow | trunk | feature_branch | custom
+
+  # Code Review Requirements
+  code_review:
+    required: true                      # Require code review?
+    approvals_needed: 1                 # Number of approvals
+
+  # Autonomy Preference (CRITICAL SETTING)
+  autonomy_preference: "trusted"        # trusted | review_each_step | adaptive
+  # trusted: Fast iteration, agents write within scope without approval
+  # review_each_step: Manual approval for every change
+  # adaptive: Start with review, build trust over time
+
+# ============================================================================
+# SECTION 4: PROJECT STRUCTURE
+# ============================================================================
+project_structure:
+  # Repository Type
+  type: "standard"                      # standard | monorepo | micro_frontends
+
+  # Directory Conventions (auto-detected, verify accuracy)
+  paths:
+    source: "./src"                     # Main source directory
+    components: "./src/components"      # Component files
+    api: "./src/app/api"               # API routes/endpoints
+    lib: "./src/lib"                   # Utility/library code
+    tests: "./tests"                   # Test files
+    e2e: "./tests/e2e-claude"          # E2E test directory (namespaced)
+    docs: "./docs"                     # Documentation
+    config: "./"                       # Config files location
+
+  # Naming Conventions
+  conventions:
+    file_naming: "kebab-case"          # kebab-case | snake_case | PascalCase | camelCase
+    component_style: "functional"      # functional | class | mixed
+    import_style: "absolute"           # absolute | relative | mixed
+
+  # Module Organization
+  module_organization: "feature"       # feature | type | domain | custom
+  # feature: Organized by feature (user/, auth/, etc.)
+  # type: Organized by type (components/, services/, etc.)
+  # domain: Organized by business domain
+
+# ============================================================================
+# SECTION 5: SAFETY & GUARDRAILS CONFIGURATION
+# ============================================================================
+safety_configuration:
+  # Risk Tolerance
+  risk_tolerance: "balanced"           # conservative | balanced | aggressive
+  # conservative: Maximum safety, frequent checks
+  # balanced: Standard safety measures
+  # aggressive: Minimal restrictions, faster iteration
+
+  # Write Scope (directories agents can modify)
+  write_scope:
+    - "src/**"
+    - "app/**"
+    - "components/**"
+    - "lib/**"
+    - "docs/**"
+    - "tests/e2e-claude/**"            # Namespaced test directory
+    # Add more paths as needed
+
+  # Protected Files/Patterns (agents CANNOT modify without explicit approval)
+  protected_files:
+    - ".env*"                          # Environment files
+    - "infra/**"                       # Infrastructure code
+    - "Dockerfile"                     # Container definitions
+    - "docker-compose.yml"
+    - "package-lock.json"              # Lockfiles (managed by package manager)
+    - "yarn.lock"
+    - "pnpm-lock.yaml"
+    # Add more patterns as needed
+
+  # Test Requirements
+  require_tests_to_pass: true          # Block progression if tests fail
+
+  # Strict Mode (production environments)
+  strict_mode: false                   # Enable for production
+
+  # Sensitive Data Detection
+  detect_sensitive_data: true          # Scan for secrets/credentials
+  warn_on_sensitive_patterns:
+    - "api[_-]?key"
+    - "secret"
+    - "password"
+    - "token"
+    - "credentials"
+
+# ============================================================================
+# SECTION 6: CAPABILITIES & FEATURES
+# ============================================================================
+capabilities_needed:
+  # Research Capability
+  research:
+    enabled: true                      # Enable web/documentation research
+    fallback_mode: "local"             # If no internet: use local data
+    sources:
+      - web_search                     # □ Web search
+      - documentation                  # □ Official docs
+      - github_issues                  # □ GitHub issues/discussions
+      - stack_overflow                 # □ Stack Overflow
+
+  # Testing Strategy
+  testing:
+    level: "standard"                  # extensive | standard | minimal
+    types:
+      - unit: true                     # Unit tests
+      - integration: true              # Integration tests
+      - e2e: true                      # End-to-end tests
+      - performance: false             # Performance tests
+    coverage_target: 80                # Target code coverage %
+
+  # Documentation
+  documentation:
+    strategy: "auto"                   # auto | manual | none
+    generate:
+      - readme: true                   # README.md
+      - changelog: true                # CHANGELOG.md
+      - api_docs: true                 # API documentation
+      - adr: false                     # Architecture Decision Records
+
+  # Deployment & DevOps
+  deployment:
+    automation_level: "manual"         # manual | semi_auto | auto
+    ci_cd:
+      enabled: false                   # Enable CI/CD workflows
+      platform: ""                     # github_actions | gitlab_ci | jenkins
+    environments:
+      - development                    # Available environments
+      - staging
+      - production
+
+  # Data Operations
+  data_operations:
+    enabled: false                     # Seeds, fixtures, migrations
+    needs:
+      - seeds: false                   # Database seeds
+      - fixtures: false                # Test fixtures
+      - migrations: false              # Database migrations
+
+# ============================================================================
+# SECTION 7: MCP (Model Context Protocol) INTEGRATION
+# ============================================================================
+mcp_configuration:
+  # Auto-discovery
+  auto_discover: true                  # Scan for MCP servers
+
+  # Core MCP Servers
+  servers:
+    playwright:
+      enabled: "auto"                  # auto | force_on | force_off
+      config: ".claude/mcp/playwright.config.json"
+
+    filesystem:
+      enabled: true
+      scope: "project"                 # project | system | custom
+      config: ".claude/mcp/fs.config.json"
+
+    git:
+      enabled: "read"                  # read | staged_write | full
+      config: ".claude/mcp/git.config.json"
+
+    browser:
+      enabled: false                   # Browser automation
+      config: ".claude/mcp/browser.config.json"
+
+    jina:
+      enabled: "auto"                  # Auto-enable if API key present
+      config: ".claude/mcp/jina.config.json"
+
+  # Custom MCP Servers
+  custom_servers: []
+  # - name: "custom-server"
+  #   command: "npx"
+  #   args: ["-y", "@custom/mcp-server"]
+  #   config: ".claude/mcp/custom.config.json"
+
+# ============================================================================
+# SECTION 8: AGENT CONFIGURATION
+# ============================================================================
+agent_configuration:
+  # Core Agents (always available)
+  core_agents:
+    coder:
+      enabled: true
+      definition: ".claude/agents/coder.md"
+
+    tester:
+      enabled: true
+      definition: ".claude/agents/tester.md"
+
+    research:
+      enabled: true
+      definition: ".claude/agents/research.md"
+
+    integrator:
+      enabled: true
+      definition: ".claude/agents/integrator.md"
+
+    stuck:
+      enabled: true
+      definition: ".claude/agents/stuck.md"
+
+  # Master Agents (coordinators)
+  master_agents:
+    master_fullstack:
+      enabled: true                    # Verifies FE+BE completeness
+      definition: ".claude/agents/master-fullstack.md"
+      auto_create_missing: true        # Create missing pieces
+
+    master_devops:
+      enabled: false                   # CI/CD coordination
+      definition: ".claude/agents/master-devops.md"
+      ci_auto_enable: false            # Only enable CI on request
+
+    master_docs:
+      enabled: true                    # Documentation generation
+      definition: ".claude/agents/master-docs.md"
+      auto_generate: true              # Auto-generate after phases
+
+    master_data:
+      enabled: false                   # Data operations
+      definition: ".claude/agents/master-data.md"
+
+  # Custom Agents (optional)
+  custom_agents: []
+  # - name: "security"
+  #   enabled: true
+  #   definition: ".claude/agents/security.md"
+  #   trigger_on: ["auth", "api", "sensitive"]
+
+# ============================================================================
+# SECTION 9: WORKFLOW CONFIGURATION
+# ============================================================================
+workflow_configuration:
+  # Default Workflow
+  default_workflow: "feature"          # feature | bugfix | deploy | custom
+
+  # Workflow Definitions
+  workflows:
+    feature:
+      enabled: true
+      steps:
+        - agent: "research"
+          description: "Gather context and patterns"
+          optional: false
+        - agent: "master_fullstack"
+          description: "Verify requirements complete"
+          optional: true
+        - agent: "coder"
+          description: "Implement feature"
+          optional: false
+        - agent: "tester"
+          description: "Validate (PHASE GATE)"
+          optional: false
+        - agent: "integrator"
+          description: "Wire everything together"
+          optional: false
+        - agent: "master_docs"
+          description: "Update documentation"
+          optional: true
+
+    bugfix:
+      enabled: true
+      steps:
+        - agent: "research"
+          description: "Investigate issue"
+        - agent: "stuck"
+          description: "Check known patterns"
+          optional: true
+        - agent: "coder"
+          description: "Implement fix"
+        - agent: "tester"
+          description: "Add regression test"
+        - agent: "integrator"
+          description: "Verify no side effects"
+
+    deploy:
+      enabled: false                   # Enable when ready for deployment
+      steps:
+        - agent: "tester"
+          description: "Run full test suite"
+        - agent: "master_devops"
+          description: "Deploy with guardrails"
+        - agent: "tester"
+          description: "Verify deployed environment"
+        - agent: "master_docs"
+          description: "Update CHANGELOG"
+
+  # Phase Gates
+  phase_gates:
+    tester_to_integrator: true         # Tests must pass before integration
+    integrator_to_devops: false        # Optional gate before deployment
+    manual_approval_production: true   # Require approval for production
+
+# ============================================================================
+# SECTION 10: ENVIRONMENT SETTINGS
+# ============================================================================
+environments:
+  # Development
+  development:
+    debug: true
+    autonomy: "trusted"
+    require_tests: false
+    require_approval: false
+    strict_mode: false
+
+  # Staging
+  staging:
+    debug: false
+    autonomy: "trusted"
+    require_tests: true
+    require_approval: false
+    strict_mode: false
+
+  # Production
+  production:
+    debug: false
+    autonomy: "review_each_step"       # Extra caution in production
+    require_tests: true
+    require_approval: true
+    strict_mode: true
+
+# ============================================================================
+# SECTION 11: OBSERVABILITY & LOGGING
+# ============================================================================
+observability:
+  # Logging
+  logging:
+    enabled: true
+    level: "info"                      # debug | info | warn | error
+    run_logs: ".claude/logs/{YYYY-MM-DD}/"
+    summaries: ".claude/reports/"
+    rotation: true
+    max_size: "10MB"
+    max_files: 10
+
+  # Metrics
+  metrics:
+    enabled: true
+    track:
+      - agent_execution_time
+      - handoff_success_rate
+      - test_pass_rate
+      - escalation_frequency
+    report_frequency: "daily"
+
+  # Handoff Tracking
+  handoff_tracking:
+    enabled: true
+    log_path: ".claude/logs/handoffs/"
+    validate_handoffs: true
+    require_trace_id: true
+
+# ============================================================================
+# SECTION 12: VALIDATION & QUALITY CHECKS
+# ============================================================================
+quality_checks:
+  # Pre-flight Checks
+  preflight:
+    enabled: true
+    checks:
+      - name: "git_status"
+        severity: "warning"            # warning | error
+      - name: "dependencies_installed"
+        severity: "error"
+      - name: "tests_passing"
+        severity: "warning"
+      - name: "environment_configured"
+        severity: "error"
+
+  # Configuration Validation
+  config_validation:
+    on_startup: true
+    validate_paths: true
+    validate_agents: true
+    validate_mcp: true
+
+  # Handoff Validation
+  handoff_validation:
+    enabled: true
+    strict_mode: false                 # Warn vs error
+    required_fields:
+      - trace_id
+      - from_agent
+      - to_agent
+      - context
+    auto_repair: true                  # Try to fix missing fields
+    max_retries: 2
+
+# ============================================================================
+# SECTION 13: INITIALIZATION METADATA
+# ============================================================================
+initialization_metadata:
+  initialized: false                   # Set to true when setup complete
+  initialized_at: ""                   # ISO-8601 timestamp
+  initialized_by: ""                   # Who ran the initialization
+  template_version: "1.0.0"           # This template's version
+
+  # Detection Results
+  detection_results:
+    timestamp: ""
+    method: ""                         # auto | manual | hybrid
+    signals_used: []
+    confidence: 0.0
+
+  # Next Steps
+  next_steps:
+    - "Review and customize this configuration"
+    - "Verify auto-detected paths and settings"
+    - "Enable/disable agents based on needs"
+    - "Test with a simple task"
+    - "Read docs/getting-started.md"
+
+# ============================================================================
+# SECTION 14: NOTES & COMMENTS
+# ============================================================================
+notes:
+  # Add any project-specific notes or considerations here
+  project_specific_notes: |
+    Add notes about your project's unique requirements,
+    constraints, or special considerations.
+
+  known_issues: |
+    Document any known issues or limitations with the current setup.
+
+  future_enhancements: |
+    Ideas for future improvements or features to add.
