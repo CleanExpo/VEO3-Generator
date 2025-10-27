@@ -44,38 +44,72 @@ The Drop-In Claude Orchestrator provides structured AI-assisted development thro
 
 ## Quick Start
 
-### One Command Install
+Choose your scenario:
 
-**Windows:**
-```powershell
-cd your-project
-.\scripts\install.ps1
+### 🆕 Scenario 1: New Project (Clean Start)
+
+**Step 1: Clone the repository**
+```bash
+mkdir my-new-project
+cd my-new-project
+git clone https://github.com/CleanExpo/Drop-In-Claude-Orchestrator.git .
 ```
 
-**macOS/Linux:**
+**Step 2: Install**
 ```bash
-cd your-project
+# Windows
+.\scripts\install.ps1
+
+# macOS/Linux
 ./scripts/install.sh
 ```
 
-This copies orchestrator templates to `.claude/` in your project.
-
-### Initialize (Recommended - NEW!)
-
-**Automated initialization with auto-detection:**
-
+**Step 3: Initialize**
 ```
-Claude, initialize the orchestrator for my project
+Claude, initialize the orchestrator for a new [Next.js/Python/etc.] project
 ```
 
-This will:
-- ✨ Auto-detect your project type and stack
-- 📋 Guide you through a quick questionnaire
-- ⚙️ Generate optimal configuration
-- ✅ Validate and verify setup
-- 🚀 Ready in 5 minutes
+[Complete New Project Guide →](.claude/INSTALLATION-GUIDE.md#scenario-1-new-project-clean-folder)
 
-[Read the Quick Start Guide](.claude/QUICK-START-INITIALIZATION.md)
+---
+
+### 📦 Scenario 2: Existing Project (Takeover)
+
+**Step 1: Navigate to your project**
+```bash
+cd /path/to/your/existing/project
+```
+
+**Step 2: Add orchestrator**
+```bash
+# Download and run installation
+curl -O https://raw.githubusercontent.com/CleanExpo/Drop-In-Claude-Orchestrator/master/scripts/install.sh
+chmod +x install.sh
+./install.sh
+```
+
+**Step 3: Context-Aware Initialization**
+```
+Analyze my existing project and initialize the orchestrator.
+
+Please:
+1. Read my README.md to understand the project
+2. Detect the project type and structure
+3. Identify existing configuration files
+4. Suggest optimal orchestrator configuration
+5. Guide me through setup without breaking anything
+```
+
+**The orchestrator will:**
+- 📖 Read your README.md for context
+- 🔍 Auto-detect project type and stack
+- 🛡️ Identify critical files to protect
+- 📋 Ask context-aware questions
+- ⚙️ Generate custom configuration
+- ✅ Verify with a safe test task
+
+[Complete Existing Project Guide →](.claude/INSTALLATION-GUIDE.md#scenario-2-existing-project-takeover)
+[Detailed Takeover Workflow →](.claude/workflows/existing-project-takeover.md)
 
 ### Configure (Manual Alternative)
 
