@@ -1,213 +1,233 @@
-# Claude Orchestrator Configuration
-# Copy this file to config.yaml and customize for your project
+# VEO3 Consistency Generator Configuration
+# Production-ready video generation system with continuity tracking
 
-# Project Type & Autonomy
-project_type: nextjs_fullstack   # or: api_only, wordpress, python_api, etc.
+# Project Type
+project_type: veo3_video_generator
 
-# Autonomy Mode (DEFAULT: trusted)
-# - trusted: Agents write within write_scope without approval; only Stuck prompts for decisions
-# - review_each_step: Integrator produces diff; you approve/decline each change
+# Autonomy Mode
 autonomy: trusted
 
 # Feature Toggles
 features:
-  research: true                 # Enable research agent (web search, docs)
-  tests: true                    # Enable testing workflows
-  docs: true                     # Enable documentation generation
-  devops: true                   # Enable CI/CD workflows
-  data: false                    # Enable data operations (seeds, fixtures)
+  research: true                 # Research VEO3 best practices
+  tests: true                    # Validation workflows
+  docs: true                     # Documentation generation
+  devops: false                  # Not needed for API-focused project
+  data: true                     # Video metadata, scene tracking
+
+# VEO3-Specific Configuration
+veo3:
+  api_key_source: "env"          # Load from .env file
+  api_endpoint: "https://generativelanguage.googleapis.com/v1beta/models"
+  model: "veo-3"
+  consistency_mode: "strict"     # strict | balanced | creative
+
+  # Consistency Controls
+  consistency:
+    character_tracking: true     # Track character appearance across scenes
+    location_tracking: true      # Maintain location consistency
+    voice_tracking: true         # Voice consistency (if supported)
+    lighting_tracking: true      # Lighting and color consistency
+    style_tracking: true         # Visual style consistency
+
+  # Hallucination Reduction
+  safeguards:
+    prompt_validation: true      # Validate prompts before sending
+    reference_checking: true     # Check against reference material
+    continuity_validation: true  # Validate scene-to-scene continuity
+    max_retries: 3              # Retry failed generations
+
+  # Video Generation Settings
+  generation:
+    default_duration: 5          # Default video duration in seconds
+    resolution: "1080p"
+    fps: 24
+    aspect_ratio: "16:9"
 
 # MCP Server Configuration
-# Auto-discovery: Detects JSON configs in ./.claude/mcp/ and common locations
-# Merges discovered servers into in-memory registry (never persists without approval)
 mcp:
-  playwright: auto               # auto | force_on | force_off
-  fs: true                       # Filesystem access
-  git: read                      # read | staged_write (read-only by default)
-  browser: false                 # Web browsing (disabled by default)
-  jina: auto                     # auto uses key if present; else off
-  auto_discover: true            # Scan for MCP servers in standard locations
-  status_endpoint: "/mcp"        # View MCP server status summary
-
-# Playwright Policy
-playwright:
-  if_found:
-    alter_config: false          # Do not modify existing playwright.config.*
-    alter_tests: false           # Do not modify existing test files
-    new_test_dir: "tests/e2e-claude"  # Add new tests here (namespaced)
-  if_not_found:
-    offer_install: true          # Prompt user to install Playwright
-    fallback_mode: "smoke"       # If declined: lighter smoke tests (build + route check)
+  playwright: false              # Not needed for API-only project
+  fs: true                       # Filesystem access for video storage
+  git: read                      # Read-only git access
+  browser: false                 # Web browsing disabled
+  jina: auto                     # Auto-enable if key present
+  auto_discover: true
 
 # Project Paths
 paths:
-  app: ./src/app
-  api: ./src/app/api
-  components: ./src/components
+  src: ./src
+  agents: ./src/agents
+  utils: ./src/utils
   lib: ./src/lib
-  e2e: ./tests/e2e-claude        # Namespaced E2E directory
-  workdir: ./                    # Current working directory (for monorepos)
+  data: ./data
+  output: ./output/videos
+  metadata: ./data/metadata
+  logs: ./.claude/logs
+  workdir: ./
 
 # Guardrails
 guardrails:
-  write_scope: 
+  write_scope:
     - "src/**"
-    - "app/**"
-    - "components/**"
-    - "lib/**"
+    - "data/**"
     - "docs/**"
-    - ".github/**"
-    - "tests/e2e-claude/**"      # Namespaced test directory
+    - "tests/**"
+    - "output/**"
   protected_files:
     - ".env*"
-    - "infra/**"
-    - "Dockerfile"
-    - "docker-compose.yml"
-    - "compose.yml"
-    - "package-lock.json"        # Lockfiles managed by package manager
-    - "yarn.lock"
-    - "pnpm-lock.yaml"
-  require_tests_to_pass: true    # Phase gate: tests must pass before Integrator
-  strict_mode: false             # Enable for production environments
+    - "config.yaml"
+    - "package-lock.json"
+  require_tests_to_pass: true
+  strict_mode: false
 
-# Telemetry & Logs
+# Logging
 logging:
   enabled: true
-  level: "info"                  # debug | info | warn | error
-  run_logs: ".claude/logs/{YYYY-MM-DD}/"  # Daily logs
-  summaries: ".claude/reports/"  # Summary reports for context
+  level: "info"
+  run_logs: ".claude/logs/{YYYY-MM-DD}/"
+  summaries: ".claude/reports/"
   rotation: true
   max_size: "10MB"
   max_files: 10
 
-# CI Configuration
-ci:
-  installed: true                # CI files present in repo
-  enabled: false                 # User must enable (or tell orchestrator to enable)
-  file: "ci/quality.yml"
-  auto_enable: false             # Never auto-enable CI
-
 # Project Information
 project:
-  name: "My Project"
-  version: "1.0.0"
-  description: "Project description"
-  repository: "https://github.com/username/project"
+  name: "VEO3 Consistency Generator"
+  version: "0.1.0"
+  description: "Production-ready VEO3 video generator with consistency controls"
+  repository: ""
 
-# Agent Configuration (Master SDK agents enabled by default)
+# Agent Configuration
 agents:
   # Core agents
-  coder:
-    enabled: true
-    definition: ".claude/agents/coder.md"
-    
-  tester:
-    enabled: true
-    definition: ".claude/agents/tester.md"
-    
   research:
     enabled: true
     definition: ".claude/agents/research.md"
-    fallback_mode: "local"       # If no internet/Jina: use project's own data/APIs
-    
+    fallback_mode: "local"
+
+  coder:
+    enabled: true
+    definition: ".claude/agents/coder.md"
+
+  tester:
+    enabled: true
+    definition: ".claude/agents/tester.md"
+
   integrator:
     enabled: true
     definition: ".claude/agents/integrator.md"
-    
+
   stuck:
     enabled: true
     definition: ".claude/agents/stuck.md"
-    
-  # Master SDK agents (enabled by default)
+
+  # VEO3-Specific Agents
+  veo3-prompt-engineer:
+    enabled: true
+    definition: ".claude/agents/veo3-prompt-engineer.md"
+    description: "Crafts consistent prompts for VEO3"
+
+  veo3-continuity-tracker:
+    enabled: true
+    definition: ".claude/agents/veo3-continuity-tracker.md"
+    description: "Tracks scene-to-scene continuity"
+
+  veo3-validator:
+    enabled: true
+    definition: ".claude/agents/veo3-validator.md"
+    description: "Validates outputs and detects hallucinations"
+
+  # Restore Assist Integration
+  sop-video-builder:
+    enabled: true
+    definition: ".claude/agents/sop-video-builder.md"
+    description: "Builds SOP videos using Restore Assist methodology"
+
+  # Disable unnecessary agents
   master-fullstack:
-    enabled: true                # Verifies FE+BE+landing+APIs+webhooks+packages
-    definition: ".claude/agents/master-fullstack.md"
-    auto_create_missing: true    # Creates missing pieces
-    
+    enabled: false
+
   master-devops:
-    enabled: true                # Prepares ci/quality.yml, env matrix, cache strategies
-    definition: ".claude/agents/master-devops.md"
-    ci_auto_enable: false        # Only enables CI when user requests
-    
+    enabled: false
+
   master-docs:
-    enabled: true                # Generates/upgrades README/ADR/CHANGELOG after each phase
+    enabled: true
     definition: ".claude/agents/master-docs.md"
-    auto_generate: true          # Auto-generate docs after phases
-    
+    auto_generate: true
+
   master-data:
-    enabled: false               # Seeds/fixtures + schema sanity checks
-    definition: ".claude/agents/master-data.md"
+    enabled: false
 
 # Stack Configuration
 stack:
-  preset: "nextjs_fullstack"
-  framework: "Next.js 14"
-  language: "TypeScript"
-  styling: "Tailwind CSS"
-  database: "PostgreSQL"
-  testing: "Playwright + Vitest"
-  deployment: "Vercel"
-  package_manager: "auto"        # auto-detect: npm | pnpm | yarn | bun
-
-# Edge Cases & Safeguards
-edge_cases:
-  monorepos:
-    enabled: false               # Set true if monorepo
-    scope_by_workdir: true       # Scope operations to current workdir
-    per_package_detection: true  # Detect config per package
-    
-  lockfile_variants:
-    respect_existing: true       # Coder respects existing toolchain
-    auto_detect: true            # npm/pnpm/yarn/bun
-    
-  no_internet:
-    research_fallback: true      # Research agent uses local data/APIs
-    jina_fallback: true          # Falls back gracefully if no Jina key
-    
-  missing_playwright:
-    offer_install: true          # Prompt to install
-    fallback_tests: "smoke"      # Use lighter smoke tests if declined
+  preset: "python_api"
+  language: "Python"
+  framework: "FastAPI"
+  database: "SQLite"           # For metadata storage
+  testing: "pytest"
+  package_manager: "pip"
 
 # Workflow Templates
 workflows:
-  feature:
+  generate_video:
+    description: "Generate a single consistent video"
     steps:
       - agent: research
-        description: "Gather context and patterns"
-      - agent: master-fullstack
-        description: "Verify requirements complete"
+        description: "Gather VEO3 API documentation and best practices"
+      - agent: veo3-prompt-engineer
+        description: "Craft optimized prompt with consistency parameters"
       - agent: coder
-        description: "Implement feature"
-      - agent: tester
-        description: "Validate (PHASE GATE)"
+        description: "Implement video generation logic"
+      - agent: veo3-validator
+        description: "Validate output (PHASE GATE)"
       - agent: integrator
-        description: "Wire everything together"
-      - agent: master-docs
-        description: "Update documentation"
-        
-  bugfix:
+        description: "Finalize and store metadata"
+
+  generate_sequence:
+    description: "Generate a sequence of related videos"
     steps:
       - agent: research
-        description: "Investigate issue"
+        description: "Analyze scene sequence requirements"
+      - agent: veo3-continuity-tracker
+        description: "Initialize continuity tracking"
+      - agent: veo3-prompt-engineer
+        description: "Generate scene-specific prompts"
+      - agent: coder
+        description: "Implement sequence generation"
+      - agent: veo3-validator
+        description: "Validate consistency across scenes (GATE)"
+      - agent: integrator
+        description: "Compile sequence and metadata"
+
+  fix_hallucination:
+    description: "Fix hallucination issues in generated video"
+    steps:
+      - agent: veo3-validator
+        description: "Identify hallucination patterns"
       - agent: stuck
-        description: "Check known patterns"
+        description: "Analyze root cause"
+      - agent: veo3-prompt-engineer
+        description: "Refine prompt to reduce hallucination"
       - agent: coder
-        description: "Implement fix"
-      - agent: tester
-        description: "Add regression test (PHASE GATE)"
-      - agent: integrator
-        description: "Verify no side effects"
-        
-  deploy:
+        description: "Regenerate video"
+      - agent: veo3-validator
+        description: "Re-validate (GATE)"
+
+  generate_sop_video:
+    description: "Generate SOP video using Restore Assist methodology (4×8 second segments)"
     steps:
-      - agent: tester
-        description: "Run full test suite (PHASE GATE)"
-      - agent: master-devops
-        description: "Deploy with guardrails"
-      - agent: tester
-        description: "Verify deployed environment"
-      - agent: master-docs
-        description: "Update CHANGELOG"
+      - agent: sop-video-builder
+        description: "Collect questionnaire and validate requirements"
+      - agent: veo3-continuity-tracker
+        description: "Initialize continuity baseline"
+      - agent: sop-video-builder
+        description: "Translate segments to VEO3 prompts"
+      - agent: coder
+        description: "Generate all 8-second segments"
+      - agent: veo3-validator
+        description: "Validate each segment (GATE)"
+      - agent: integrator
+        description: "Compile segments and export for platforms"
 
 # Environment Settings
 environments:
@@ -215,21 +235,15 @@ environments:
     debug: true
     autonomy: trusted
     require_tests: false
-    
-  staging:
+
+  production:
     debug: false
     autonomy: trusted
     require_tests: true
-    
-  production:
-    debug: false
-    autonomy: review_each_step   # Extra caution in production
-    require_tests: true
-    require_approval: true
-    strict_mode: true
+    require_approval: false
+    strict_mode: false
 
 # Phase Gates
 phase_gates:
-  tester_to_integrator: true     # Tester MUST pass before Integrator
-  integrator_to_devops: false    # Optional gate before deployment
-  manual_approval_production: true  # Require manual approval for production
+  validator_to_integrator: true  # Validator MUST pass before Integrator
+  manual_approval_production: false
