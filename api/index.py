@@ -11,10 +11,22 @@ from typing import List, Optional, Dict
 import os
 import sys
 
-# Add parent directory to path for imports
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Add parent directory and src directory to path for imports
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
+sys.path.insert(0, parent_dir)
+sys.path.insert(0, os.path.join(parent_dir, 'src'))
 
-from src.sop_questionnaire import SOPQuestionnaire, SOPSegment, VideoStyle, PlatformTarget
+# Also try /var/task for Vercel environment
+if os.path.exists('/var/task'):
+    sys.path.insert(0, '/var/task')
+    sys.path.insert(0, '/var/task/src')
+
+try:
+    from src.sop_questionnaire import SOPQuestionnaire, SOPSegment, VideoStyle, PlatformTarget
+except ImportError:
+    # Try direct import if src package import fails
+    from sop_questionnaire import SOPQuestionnaire, SOPSegment, VideoStyle, PlatformTarget
 
 app = FastAPI(
     title="VEO3 Consistency Generator API",
@@ -93,7 +105,7 @@ async def root():
         "status": "online",
         "description": "Generate consistent SOP videos using Google VEO3",
         "features": [
-            "Restore Assist methodology (4×8-second segments)",
+            "Restore Assist methodology (4ï¿½8-second segments)",
             "Questionnaire-driven video generation",
             "Perfect consistency across segments",
             "Multi-platform export",
@@ -215,7 +227,10 @@ async def validate_questionnaire(request: QuestionnaireRequest):
 async def translate_questionnaire(request: QuestionnaireRequest):
     """Translate questionnaire to VEO3 prompts."""
     try:
-        from src.sop_translator import SOPPromptTranslator
+        try:
+            from src.sop_translator import SOPPromptTranslator
+        except ImportError:
+            from sop_translator import SOPPromptTranslator
 
         # First validate
         validate_response = await validate_questionnaire(request)
@@ -346,7 +361,10 @@ async def list_templates():
 @app.get("/api/templates/{template_name}")
 async def get_template(template_name: str):
     """Get a specific template."""
-    from src.sop_questionnaire import QuestionnaireBuilder
+    try:
+        from src.sop_questionnaire import QuestionnaireBuilder
+    except ImportError:
+        from sop_questionnaire import QuestionnaireBuilder
 
     valid_templates = ["product_demo", "how_to", "training", "announcement"]
 

@@ -3,7 +3,10 @@
   "builds": [
     {
       "src": "api/index.py",
-      "use": "@vercel/python"
+      "use": "@vercel/python",
+      "config": {
+        "includeFiles": ["src/**/*.py"]
+      }
     }
   ],
   "routes": [
@@ -13,6 +16,7 @@
     }
   ],
   "env": {
-    "PYTHON_VERSION": "3.11"
+    "PYTHON_VERSION": "3.11",
+    "PYTHONPATH": "$PYTHONPATH:/var/task"
   }
 }
